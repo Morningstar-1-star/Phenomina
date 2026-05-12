@@ -1,0 +1,1790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Nexus OS | Neural Vault</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.294.0",
+        "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+        "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+        "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js"
+      }
+    }
+    </script>
+    <style>
+        :root {
+            --accent-rgb: 249, 115, 22;
+            --accent: rgb(var(--accent-rgb));
+            --bg-base: #030305;
+            --bg-panel: rgba(10,10,15,0.4);
+            --bg-modal: rgba(5,5,10,0.85);
+            --bg-card: rgba(20,20,25,0.6);
+            --bg-input: rgba(255,255,255,0.06);
+            --text-main: #f0f0f0;
+            --text-muted: #888899;
+            --border-color: rgba(255,255,255,0.08);
+            --overlay: rgba(0,0,0,0.8);
+            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --safe-top: env(safe-area-inset-top, 40px);
+        }
+
+        [data-theme="light"] {
+            --bg-base: #f5f5f7;
+            --bg-panel: rgba(255,255,255,0.8);
+            --bg-modal: rgba(255,255,255,0.95);
+            --bg-card: rgba(255,255,255,0.6);
+            --bg-input: rgba(0,0,0,0.05);
+            --text-main: #111115;
+            --text-muted: #666677;
+            --border-color: rgba(0,0,0,0.06);
+            --overlay: rgba(255,255,255,0.8);
+        }
+
+        * { box-sizing: border-box; }
+        body { 
+            background-color: var(--bg-base); 
+            color: var(--text-main); 
+            font-family: 'Space Mono', monospace; 
+            overflow-x: hidden; 
+            -webkit-tap-highlight-color: transparent; 
+            transition: background-color 0.4s ease, color 0.4s ease;
+        }
+        h1, h2, h3, .syne { font-family: 'Syne', sans-serif; }
+        
+        /* Glassmorphism & UI Utilities */
+        .glass-heavy { 
+            background: var(--bg-modal); 
+            backdrop-filter: blur(32px) saturate(180%); 
+            -webkit-backdrop-filter: blur(32px) saturate(180%); 
+            border: 1px solid var(--border-color); 
+            box-shadow: 0 16px 40px rgba(0,0,0,0.2);
+        }
+        .glass-card { 
+            background: var(--bg-card); 
+            backdrop-filter: blur(16px); 
+            -webkit-backdrop-filter: blur(16px); 
+            border: 1px solid var(--border-color); 
+        }
+
+        /* Enhanced Touch & Interaction Animations */
+        .spring-anim { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .hover-bounce:hover { transform: translateY(-4px) scale(1.02); box-shadow: 0 12px 30px rgba(var(--accent-rgb),0.15); }
+        .active-bounce { transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .active-bounce:active { transform: scale(0.9) !important; opacity: 0.8; }
+        
+        /* Ripple effect for navigation and primary buttons */
+        .touch-ripple { position: relative; overflow: hidden; }
+        .touch-ripple::after {
+            content: ""; display: block; position: absolute; width: 100%; height: 100%;
+            top: 0; left: 0; pointer-events: none;
+            background-image: radial-gradient(circle, var(--text-main) 10%, transparent 10.01%);
+            background-repeat: no-repeat; background-position: 50%;
+            transform: scale(10, 10); opacity: 0; transition: transform .5s, opacity 1s;
+        }
+        .touch-ripple:active::after { transform: scale(0, 0); opacity: .15; transition: 0s; }
+        
+        .text-accent { color: var(--accent); }
+        .bg-accent { background-color: var(--accent); }
+        
+        @keyframes fadeUp { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes slideUpBouncy { 0% { transform: translateY(100%); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+        
+        .animate-in { animation: fadeUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        .slide-up { animation: slideUpBouncy 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+        
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        input, textarea, select, [contenteditable] { caret-color: var(--accent); color: var(--text-main); outline: none; background: transparent; }
+        input::placeholder, textarea::placeholder { color: var(--text-muted); }
+        
+        /* Tags & Buttons */
+        .tag-chip { display: inline-flex; align-items: center; gap: 4px; background: rgba(var(--accent-rgb), 0.1); border: 1px solid rgba(var(--accent-rgb), 0.3); color: var(--accent); font-size: 10px; font-weight: 700; padding: 8px 14px; border-radius: 999px; transition: 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; }
+        .tag-chip:hover { background: var(--accent); color: #fff; transform: scale(1.05); box-shadow: 0 4px 12px rgba(var(--accent-rgb), 0.3); }
+        
+        .btn-action { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; padding: 14px; border-radius: 16px; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; border: none; }
+        .btn-primary { background: var(--accent); color: #fff; box-shadow: 0 4px 15px rgba(var(--accent-rgb), 0.4); }
+        .btn-secondary { background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); }
+        
+        /* Viewer Specifics */
+        .viewer-overlay { position: fixed; inset: 0; z-index: 500; background: var(--bg-base); display: flex; flex-direction: column; overflow: hidden;}
+        
+        /* Clean video block */
+        .cinematic-wrapper { position: relative; width: 100%; background: #000; overflow: hidden; aspect-ratio: 16/9; max-height: 42vh; flex-shrink: 0; }
+        .cinematic-bg { display: none; }
+        .cinematic-layer { display: none; }
+        .layer-1, .layer-2, .layer-3 { display: none; }
+        @keyframes pulse { 0%{} 100%{} }
+        .viewer-media-container { width: 100%; height: 100%; display: flex; justify-content: center; align-items: center; position: relative; z-index: 10; }
+        .viewer-media { max-width: 100%; max-height: 100%; object-fit: contain; width: 100%; height: 100%; border-radius: 0; }
+
+        /* Avdan-style action bar */
+        .action-bar-avdan { display: flex; align-items: center; justify-content: space-around; padding: 14px 16px; border-bottom: 1px solid var(--border-color); background: var(--bg-base); }
+        .avdan-action-btn { display: flex; flex-direction: column; align-items: center; gap: 3px; color: var(--text-muted); font-size: 11px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer; background: none; border: none; padding: 6px 10px; border-radius: 12px; transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); -webkit-tap-highlight-color: transparent; }
+        .avdan-action-btn:active { transform: scale(0.82); background: rgba(var(--accent-rgb),0.1); color: var(--accent); }
+        .avdan-action-btn.active { color: var(--accent); }
+        .avdan-action-btn svg { width: 24px; height: 24px; }
+
+        /* Viewer info section */
+        .viewer-info { flex: 1; overflow-y: auto; background: var(--bg-base); }
+        .viewer-info-inner { max-width: 4xl; padding: 16px 16px 120px 16px; }
+        .viewer-title-row { padding: 0 0 12px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .viewer-channel-row { display: flex; align-items: center; gap: 12px; padding: 14px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 16px; }
+        .viewer-channel-avatar { width: 42px; height: 42px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #7c3aed); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 16px; flex-shrink: 0; border: 2px solid rgba(255,255,255,0.1); }
+        .viewer-channel-name { font-weight: 700; font-size: 14px; color: var(--text-main); }
+        .viewer-channel-sub { font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase; }
+        .follow-btn { margin-left: auto; padding: 8px 18px; border-radius: 999px; border: 1.5px solid var(--border-color); background: transparent; color: var(--text-main); font-weight: 700; font-size: 12px; cursor: pointer; transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+        .follow-btn:active { transform: scale(0.9); background: var(--accent); border-color: var(--accent); color: #fff; }
+        .meta-card { background: var(--bg-input); border: 1px solid var(--border-color); border-radius: 20px; padding: 16px; margin-bottom: 16px; position: relative; }
+        .meta-row { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border-color); }
+        .meta-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .meta-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-muted); width: 90px; flex-shrink: 0; }
+        .meta-value { font-size: 14px; font-weight: 700; color: var(--text-main); }
+
+        /* ═══ WATCH SECTION ═══ */
+        .watch-header { position: absolute; top: 0; inset-x: 0; z-index: 100; padding: var(--safe-top) 20px 15px 20px; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 100%); pointer-events: none; }
+        .watch-tabs { display: flex; gap: 8px; background: rgba(255,255,255,0.1); backdrop-filter: blur(12px); border-radius: 999px; padding: 4px; border: 1px solid rgba(255,255,255,0.12); }
+        .watch-tab-btn { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; color: rgba(255,255,255,0.55); padding: 7px 18px; border-radius: 999px; border: none; background: transparent; cursor: pointer; transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1); letter-spacing: 0.3px; }
+        .watch-tab-btn.active { background: rgba(255,255,255,0.18); color: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.3); transform: scale(1.04); }
+        .watch-tab-btn:active { transform: scale(0.9); }
+
+        /* Reels */
+        .reels-container { position: absolute; inset: 0; z-index: 10; background: #000; overflow-y: scroll; scroll-snap-type: y mandatory; padding-bottom: 80px; }
+        .reel-snap { scroll-snap-align: start; scroll-snap-stop: always; height: calc(100dvh - 80px); width: 100%; position: relative; }
+
+        /* Videos Feed */
+        .video-feed-container { position: absolute; inset: 0; z-index: 10; background: var(--bg-base); overflow-y: scroll; padding: calc(var(--safe-top) + 60px) 0 100px 0; }
+
+        /* Avdan Video Card */
+        .vid-card { position: relative; cursor: pointer; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+        .vid-card:active { transform: scale(0.97); }
+        .vid-card-thumb { position: relative; width: 100%; aspect-ratio: 16/9; background: #111; overflow: hidden; border-radius: 0; }
+        .vid-card-thumb img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.6s cubic-bezier(0.25,0.46,0.45,0.94); }
+        .vid-card:active .vid-card-thumb img { transform: scale(1.04); }
+        .vid-play-btn { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.15); transition: background 0.3s; }
+        .vid-play-btn:active { background: rgba(0,0,0,0.4); }
+        .vid-play-circle { width: 54px; height: 54px; border-radius: 50%; background: rgba(0,0,0,0.55); backdrop-filter: blur(8px); border: 2px solid rgba(255,255,255,0.25); display: flex; align-items: center; justify-content: center; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s; }
+        .vid-card:active .vid-play-circle { transform: scale(0.85); box-shadow: 0 0 0 12px rgba(var(--accent-rgb),0.15); }
+        .vid-duration-badge { position: absolute; bottom: 10px; right: 10px; background: rgba(0,0,0,0.8); backdrop-filter: blur(6px); color: #fff; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px; font-family: 'Space Mono', monospace; letter-spacing: 0.5px; }
+
+        /* Avdan meta row */
+        .vid-meta { display: flex; align-items: flex-start; gap: 12px; padding: 10px 14px 14px 14px; }
+        .vid-avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg, var(--accent), #7c3aed); flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; border: 2px solid rgba(255,255,255,0.12); }
+        .vid-info { flex: 1; min-width: 0; }
+        .vid-title { font-weight: 700; font-size: 14px; color: var(--text-main); line-height: 1.35; margin-bottom: 3px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        .vid-sub { font-size: 11px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+        .vid-stats-row { display: flex; align-items: center; gap: 20px; padding: 6px 14px 16px 14px; border-bottom: 1px solid var(--border-color); }
+        .vid-stat { display: flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 12px; font-weight: 700; letter-spacing: 0.4px; }
+        .vid-stat svg { width: 16px; height: 16px; }
+
+        /* Section heading */
+        .feed-section-head { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; color: var(--text-main); padding: 0 14px 12px 14px; }
+
+        /* Trending horizontal scroll */
+        .trending-scroll { display: flex; gap: 12px; overflow-x: auto; padding: 0 14px 4px 14px; scroll-snap-type: x mandatory; }
+        .trending-scroll::-webkit-scrollbar { display: none; }
+        .trending-card { flex-shrink: 0; width: 200px; border-radius: 16px; overflow: hidden; background: var(--bg-card); border: 1px solid var(--border-color); cursor: pointer; scroll-snap-align: start; transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1); }
+        .trending-card:active { transform: scale(0.94); }
+        .trending-card img { width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block; }
+        .trending-card-info { padding: 8px 10px; }
+        .trending-card-title { font-size: 12px; font-weight: 700; color: var(--text-main); line-clamp: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .trending-card-sub { font-size: 10px; color: var(--text-muted); font-weight: 700; letter-spacing: 0.4px; display: flex; gap: 8px; margin-top: 3px; }
+
+        /* Landscape video player */
+        .landscape-player-overlay { position: fixed; inset: 0; z-index: 600; background: #000; display: flex; flex-direction: column; justify-content: center; align-items: center; }
+        .landscape-player-overlay video { width: 100%; height: 100%; object-fit: contain; }
+        @keyframes scaleIn { from { transform: scale(0.92); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        .scale-in { animation: scaleIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+        /* Tap animations for header buttons */
+        @keyframes btnPop { 0%{transform:scale(1)} 40%{transform:scale(0.78)} 70%{transform:scale(1.15)} 100%{transform:scale(1)} }
+        .btn-pop:active { animation: btnPop 0.32s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+        /* Bottom Nav */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: calc(72px + var(--safe-bottom)); background: var(--bg-modal); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 400; padding-bottom: var(--safe-bottom); }
+        .nav-item { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 50px; height: 50px; color: var(--text-muted); transition: color 0.3s, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); cursor: pointer; border-radius: 50%;}
+        .nav-item.active { color: var(--text-main); }
+        .nav-item:active { transform: scale(0.85); background: var(--bg-input); }
+        .nav-fab { width: 44px; height: 44px; border-radius: 16px; background: var(--text-main); color: var(--bg-base); display: flex; align-items: center; justify-content: center; transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .nav-fab:active { transform: scale(0.8); }
+
+        /* ── SKELETON LOADING ── */
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+        .skeleton-pulse {
+            background: linear-gradient(90deg, var(--bg-input) 25%, rgba(255,255,255,0.07) 50%, var(--bg-input) 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.6s infinite ease-in-out;
+        }
+
+        /* ── SMOOTH SCROLL ── */
+        html { scroll-behavior: smooth; }
+        * { -webkit-overflow-scrolling: touch; }
+        .main-scroll { overflow-y: auto; scroll-behavior: smooth; overscroll-behavior-y: contain; }
+
+        /* ── STAGGER ANIMATE IN ── */
+        @keyframes staggerIn { from { opacity:0; transform:translateY(18px) scale(0.97); } to { opacity:1; transform:translateY(0) scale(1); } }
+        .stagger-item { animation: staggerIn 0.45s cubic-bezier(0.34,1.56,0.64,1) both; }
+
+        /* ── ELASTIC SPRING ── */
+        .spring-bounce { transition: transform 0.4s cubic-bezier(0.34, 1.8, 0.64, 1); }
+        .spring-bounce:active { transform: scale(0.93); }
+
+        /* Tab tap animation */
+        @keyframes navTap { 0% { transform: scale(1); } 30% { transform: scale(0.72); } 65% { transform: scale(1.18); } 100% { transform: scale(1); } }
+        @keyframes navGlow { 0% { box-shadow: 0 0 0px rgba(var(--accent-rgb),0); } 40% { box-shadow: 0 0 18px 4px rgba(var(--accent-rgb),0.45); } 100% { box-shadow: 0 0 0px rgba(var(--accent-rgb),0); } }
+        .nav-tapped { animation: navTap 0.38s cubic-bezier(0.34, 1.56, 0.64, 1) forwards, navGlow 0.5s ease forwards; }
+    </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" data-type="module">
+    import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+    import { createRoot } from 'react-dom/client';
+    import { 
+        Search, Sparkles, X, Link as LinkIcon, FileText, Play, Send, Bot,
+        Folder, Trash2, Settings, Star, Share2, Loader, Plus, ChevronLeft, 
+        ChevronDown, ChevronUp, MessageSquare, Heart, Bookmark, LayoutGrid, 
+        Grid3X3, List, Layout, Square, Download, Tag, Mail, Key, Edit3, Clapperboard,
+        Volume2, VolumeX, MoreHorizontal, Home as HomeIcon, User, Moon, Sun, Palette, Code, Camera
+    } from 'lucide-react';
+    import { initializeApp } from "firebase/app";
+    import { getFirestore, collection, onSnapshot, query, addDoc, doc, deleteDoc, updateDoc } from "firebase/firestore";
+    import { getAuth, signInAnonymously, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "firebase/auth";
+
+    // Firebase Initialization
+    const firebaseConfig = { apiKey: "AIzaSyDYb0bGc-QxMv9Cgd-r6CwxPvjKmACPV5A", authDomain: "planning-with-ai-7f4db.firebaseapp.com", projectId: "planning-with-ai-7f4db", storageBucket: "planning-with-ai-7f4db.firebasestorage.app", messagingSenderId: "5792058693", appId: "1:5792058693:web:9a132f1bc3aaf60e791ead" };
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+    const APP_ID = 'nexus-v8';
+    const IMGBB_KEY = '3414f02c69be9032899abd55f7b09719';
+    const CLOUDINARY_CLOUD = 'dw3xg7be9';
+    const CLOUDINARY_PRESET = localStorage.getItem('nxs_cl_preset') || '';
+
+    const THEMES = { orange: '249, 115, 22', cyan: '6, 182, 212', green: '34, 197, 94', purple: '168, 85, 247', rose: '244, 63, 94', pintrest: '230, 0, 35' };
+
+    // Utility Functions
+    const getDomain = (url) => { try { return new URL(url.startsWith('http')?url:`https://${url}`).hostname.replace('www.', ''); } catch(e) { return 'Local'; } };
+
+    // ── GOOGLE DRIVE LINK CONVERTER ──
+    const convertDriveUrl = (url) => {
+        if (!url) return url;
+        const m = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (m) return { streamUrl: `https://drive.google.com/file/d/${m[1]}/preview`, fileId: m[1], isDrive: true };
+        const m2 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+        if (m2) return { streamUrl: `https://drive.google.com/file/d/${m2[1]}/preview`, fileId: m2[1], isDrive: true };
+        return null;
+    };
+    const isDriveUrl = (url) => !!(url && (url.includes('drive.google.com') || url.includes('docs.google.com')));
+
+    // ── IMGBB UPLOAD ──
+    const uploadToImgBB = async (file) => {
+        const fd = new FormData();
+        fd.append('image', file);
+        const res = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_KEY}`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (!data.success) throw new Error('ImgBB upload failed');
+        return data.data.url;
+    };
+
+    // ── CLOUDINARY UPLOAD ──
+    const uploadToCloudinary = async (file) => {
+        if (!CLOUDINARY_PRESET) return null;
+        const fd = new FormData();
+        fd.append('file', file);
+        fd.append('upload_preset', CLOUDINARY_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/auto/upload`, { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.error) throw new Error(data.error.message);
+        return data.secure_url;
+    };
+
+    // ── DUAL UPLOAD (ImgBB primary, Cloudinary backup) ──
+    const uploadMediaFile = async (file) => {
+        const results = await Promise.allSettled([uploadToImgBB(file), uploadToCloudinary(file)]);
+        const imgbbUrl = results[0].status === 'fulfilled' ? results[0].value : null;
+        const cloudUrl = results[1].status === 'fulfilled' ? results[1].value : null;
+        if (!imgbbUrl && !cloudUrl) throw new Error('Both uploads failed');
+        return { primary: imgbbUrl || cloudUrl, imgbbUrl, cloudUrl };
+    };
+
+    const getMediaType = (url) => {
+        if (!url) return 'link';
+        const s = url.toLowerCase();
+        if (s.includes('drive.google.com') || s.includes('docs.google.com')) return 'drive';
+        if (s.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/))([A-Za-z0-9_-]{11})/)) return 'youtube';
+        if (s.includes('.m3u8')) return 'hls';
+        if (s.match(/\.(mp4|webm|ogg)(\?.*)?$/) || s.startsWith('data:video')) return 'video';
+        if (s.match(/\.(mp3|wav|m4a|aac)(\?.*)?$/) || s.startsWith('data:audio')) return 'audio';
+        if (s.match(/\.(jpg|jpeg|png|gif|webp|avif|bmp)(\?.*)?$/) || s.startsWith('data:image')) return 'image';
+        return 'link';
+    };
+
+    // PINTEREST CDN EXTRACTOR — pulls direct pinimg.com image from pin ID
+    // OPENGRAPH METADATA EXTRACTOR
+    const fetchMetaImage = async (url) => {
+        // Pinterest: use Cloudflare Worker backend (bypasses CORS + Pinterest blocks)
+        if (url.includes('pinterest.com') || url.includes('pin.it')) {
+            try {
+                const cleanUrl = url.split('#')[0];
+                const res = await fetch(`https://cold-recipe-0359.ggam1097.workers.dev/?url=${encodeURIComponent(cleanUrl)}`);
+                const data = await res.json();
+                if (data.image) return data.image;
+            } catch(e) {}
+            return null;
+        }
+        try {
+            const res = await fetch(`https://api.microlink.io?url=${encodeURIComponent(url)}`);
+            const data = await res.json();
+            if (data.data?.image?.url) return data.data.image.url;
+        } catch(e) {}
+        try {
+            const res = await fetch(`https://api.dub.co/metatags?url=${encodeURIComponent(url)}`);
+            const data = await res.json();
+            if (data.image) return data.image;
+        } catch(e) {}
+        return null;
+    };
+
+    // GLOBAL THUMBNAIL RESOLVER
+    const getThumbnail = (item) => {
+        if (!item) return null;
+        if (item.thumb) return item.thumb;
+        if (item.type === 'image') return item.url;
+        if (item.type === 'youtube') {
+            const match = item.url?.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?(?:.*&)?v=|shorts\/|embed\/))([A-Za-z0-9_-]{11})/);
+            return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+        }
+        return null;
+    };
+
+    const formatDuration = (sec) => {
+        if (!sec || !isFinite(sec)) return '';
+        const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
+        return h > 0 ? `${h}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}` : `${m}:${s.toString().padStart(2,'0')}`;
+    };
+
+    const formatNumber = (num) => {
+        if (!num) return '0';
+        if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+        if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+        return num.toString();
+    }
+
+    const generateVideoMeta = (url, type) => {
+        return new Promise((resolve) => {
+            const video = document.createElement('video');
+            video.crossOrigin = 'anonymous'; video.muted = true; video.playsInline = true;
+            
+            const finish = (thumb, duration, isPortrait) => { resolve({ thumb, duration, isPortrait }); video.pause(); video.removeAttribute('src'); video.load(); };
+            
+            video.addEventListener('loadeddata', () => { video.currentTime = isFinite(video.duration) ? Math.min(2, video.duration * 0.1) : 1; });
+            video.addEventListener('seeked', () => {
+                try {
+                    const canvas = document.createElement('canvas');
+                    canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 360;
+                    canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+                    const isPortrait = canvas.height > canvas.width;
+                    finish(canvas.toDataURL('image/jpeg', 0.6), video.duration, isPortrait);
+                } catch (e) { finish(null, video.duration, false); }
+            });
+            video.addEventListener('error', () => finish(null, null, false));
+            setTimeout(() => finish(null, video.duration || null, false), 8000);
+
+            if (type === 'hls' && window.Hls && window.Hls.isSupported()) {
+                const hls = new window.Hls({ startLevel: 0, maxBufferLength: 2, enableWorker: false });
+                hls.loadSource(url); hls.attachMedia(video);
+            } else { video.src = url; }
+        });
+    };
+
+    const handleAIQuery = async (aiConfig, prompt, isJson = false) => {
+        const { provider, key, url, model } = aiConfig;
+        const sysMsg = isJson ? "Analyze the content. Return ONLY a raw, valid JSON object. No markdown, no backticks." : "Provide extremely short, sharp, fast, and precise answers. Go straight to the point.";
+
+        if (provider === 'native' || provider === 'gemini') {
+            const apiKey = provider === 'native' ? "" : key; 
+            const endpoint = provider === 'native' 
+                ? `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`
+                : `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            const payload = { contents: [{ parts: [{ text: prompt }] }], systemInstruction: { parts: [{ text: sysMsg }] } };
+            const r = await fetch(endpoint, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload) });
+            const d = await r.json();
+            if (d.error) throw new Error(d.error.message);
+            return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        } 
+        return '';
+    };
+
+    /* ═══ AUTHENTICATION COMPONENT ═══ */
+    const AuthScreen = () => {
+        const [mode, setMode] = useState('login'); const [email, setEmail] = useState(''); const [pass, setPass] = useState('');
+        const [loading, setLoading] = useState(false);
+        const execAuth = async (action) => {
+            setLoading(true);
+            try {
+                if (action === 'google') await signInWithPopup(auth, new GoogleAuthProvider());
+                else if (action === 'anon') await signInAnonymously(auth);
+                else mode === 'signup' ? await createUserWithEmailAndPassword(auth, email, pass) : await signInWithEmailAndPassword(auth, email, pass);
+            } catch (e) { alert(e.message); }
+            setLoading(false);
+        };
+        return (
+            <div style={{minHeight:'100vh',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:'24px',background:'var(--bg-base)',position:'relative',overflow:'hidden'}}>
+                {/* Ambient glow orbs */}
+                <div style={{position:'absolute',top:'-10%',left:'-10%',width:'55vw',height:'55vw',maxWidth:340,maxHeight:340,borderRadius:'50%',background:`radial-gradient(circle, rgba(var(--accent-rgb),0.18) 0%, transparent 70%)`,pointerEvents:'none',filter:'blur(40px)'}}/>
+                <div style={{position:'absolute',bottom:'-5%',right:'-8%',width:'45vw',height:'45vw',maxWidth:280,maxHeight:280,borderRadius:'50%',background:`radial-gradient(circle, rgba(var(--accent-rgb),0.10) 0%, transparent 70%)`,pointerEvents:'none',filter:'blur(50px)'}}/>
+
+                {/* Card */}
+                <div className="glass-heavy animate-in" style={{width:'100%',maxWidth:380,borderRadius:36,padding:'40px 32px 36px 32px',position:'relative',zIndex:1}}>
+                    
+                    {/* Logo area */}
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',marginBottom:32}}>
+                        <div style={{width:72,height:72,borderRadius:22,background:`rgba(var(--accent-rgb),0.15)`,border:`1.5px solid rgba(var(--accent-rgb),0.35)`,display:'flex',alignItems:'center',justifyContent:'center',marginBottom:16,boxShadow:`0 0 32px rgba(var(--accent-rgb),0.2)`}} className="spring-anim">
+                            <Sparkles style={{width:32,height:32,color:'var(--accent)'}}/>
+                        </div>
+                        <h1 className="syne" style={{fontSize:30,fontWeight:800,letterSpacing:4,color:'var(--text-main)',margin:0,textTransform:'uppercase'}}>NEXUS</h1>
+                        <p style={{fontSize:11,fontWeight:700,color:'var(--text-muted)',letterSpacing:3,textTransform:'uppercase',marginTop:6}}>{mode === 'signup' ? 'Create Account' : 'Neural Vault'}</p>
+                    </div>
+
+                    {/* Email/password fields */}
+                    {(mode === 'login' || mode === 'signup') && (
+                        <div style={{display:'flex',flexDirection:'column',gap:12,marginBottom:16}} className="animate-in">
+                            <div style={{position:'relative'}}>
+                                <Mail style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',width:16,height:16,color:'var(--text-muted)',pointerEvents:'none'}}/>
+                                <input type="email" placeholder="Email address" value={email} onChange={e=>setEmail(e.target.value)}
+                                    style={{width:'100%',padding:'14px 16px 14px 44px',borderRadius:16,background:'var(--bg-input)',border:'1px solid var(--border-color)',fontSize:14,fontWeight:600,color:'var(--text-main)',transition:'border-color 0.2s'}}
+                                    onFocus={e=>e.target.style.borderColor='var(--accent)'} onBlur={e=>e.target.style.borderColor='var(--border-color)'}/>
+                            </div>
+                            <div style={{position:'relative'}}>
+                                <Key style={{position:'absolute',left:16,top:'50%',transform:'translateY(-50%)',width:16,height:16,color:'var(--text-muted)',pointerEvents:'none'}}/>
+                                <input type="password" placeholder="Password" value={pass} onChange={e=>setPass(e.target.value)}
+                                    style={{width:'100%',padding:'14px 16px 14px 44px',borderRadius:16,background:'var(--bg-input)',border:'1px solid var(--border-color)',fontSize:14,fontWeight:600,color:'var(--text-main)',transition:'border-color 0.2s'}}
+                                    onFocus={e=>e.target.style.borderColor='var(--accent)'} onBlur={e=>e.target.style.borderColor='var(--border-color)'}
+                                    onKeyDown={e=>e.key==='Enter'&&execAuth('email')}/>
+                            </div>
+                            <button onClick={()=>execAuth('email')} disabled={loading} className="active-bounce"
+                                style={{width:'100%',padding:'15px',borderRadius:16,background:'var(--accent)',border:'none',color:'#fff',fontSize:13,fontWeight:800,letterSpacing:2,textTransform:'uppercase',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,boxShadow:`0 6px 24px rgba(var(--accent-rgb),0.35)`,marginTop:4}}>
+                                {loading ? <Loader style={{width:18,height:18}} className="animate-spin"/> : (mode === 'signup' ? '— Create Account —' : '— Access Vault —')}
+                            </button>
+                            <button onClick={()=>setMode(mode==='login'?'signup':'login')}
+                                style={{background:'none',border:'none',color:'var(--text-muted)',fontSize:12,fontWeight:700,cursor:'pointer',letterSpacing:1,padding:'4px 0'}} className="spring-anim">
+                                {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Log in'}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Divider */}
+                    <div style={{display:'flex',alignItems:'center',gap:12,margin:'16px 0'}}>
+                        <div style={{flex:1,height:1,background:'var(--border-color)'}}/>
+                        <span style={{fontSize:10,fontWeight:700,color:'var(--text-muted)',letterSpacing:2,textTransform:'uppercase'}}>or</span>
+                        <div style={{flex:1,height:1,background:'var(--border-color)'}}/>
+                    </div>
+
+                    {/* Social/guest buttons */}
+                    <div style={{display:'flex',gap:10}}>
+                        <button onClick={()=>execAuth('google')} disabled={loading} className="active-bounce"
+                            style={{flex:1,padding:'13px 8px',borderRadius:16,background:'var(--bg-input)',border:'1px solid var(--border-color)',color:'var(--text-main)',fontSize:12,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7,letterSpacing:0.5}}>
+                            <svg width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
+                            Google
+                        </button>
+                        <button onClick={()=>execAuth('anon')} disabled={loading} className="active-bounce"
+                            style={{flex:1,padding:'13px 8px',borderRadius:16,background:'var(--bg-input)',border:'1px solid var(--border-color)',color:'var(--text-main)',fontSize:12,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:7,letterSpacing:0.5}}>
+                            <User style={{width:16,height:16}}/>
+                            Guest
+                        </button>
+                    </div>
+                </div>
+
+                {/* Bottom tagline */}
+                <p style={{marginTop:24,fontSize:10,fontWeight:700,color:'var(--text-muted)',letterSpacing:2,textTransform:'uppercase',opacity:0.5}}>Nexus OS · Neural Vault v8</p>
+            </div>
+        );
+    };
+
+    /* ═══ MASONRY LAYOUT ═══ */
+    const PinterestMasonry = ({ items, onSelect, onUpdate }) => {
+        const [cols, setCols] = useState(2);
+        
+        useEffect(() => {
+            const updateCols = () => setCols(window.innerWidth >= 768 ? 3 : 2);
+            updateCols();
+            window.addEventListener('resize', updateCols);
+            return () => window.removeEventListener('resize', updateCols);
+        }, []);
+
+        const columns = Array.from({ length: cols }, () => []);
+        items.forEach((item, i) => columns[i % cols].push(item));
+
+        return (
+            <div className="flex gap-3 md:gap-4 items-start">
+                {columns.map((col, colIndex) => (
+                    <div key={colIndex} className="flex-1 flex flex-col gap-3 md:gap-4">
+                        {col.map(item => {
+                            const thumb = getThumbnail(item);
+                            return (
+                                <div key={item.id} onClick={() => onSelect(item)} className="flex flex-col cursor-pointer group spring-anim">
+                                    <div className="relative rounded-[20px] overflow-hidden bg-[var(--bg-input)] w-full active-bounce">
+                                        {thumb ? (
+                                            <img src={thumb} className="w-full h-auto object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" onError={(e) => { e.target.style.display = 'none'; e.target.nextElementSibling.style.display = 'flex'; }} />
+                                        ) : item.type === 'embed' ? (
+                                            <div className="w-full aspect-[4/5] relative bg-black overflow-hidden">
+                                                <iframe 
+                                                    srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:12px;color:#f0f0f0;font-family:'Space Mono',monospace;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:90vh;background:#000;text-align:center;overflow:hidden;}h1,h2,h3{font-family:'Syne',sans-serif;margin:0 0 8px 0;font-size:2rem;color:white;}p{margin:0;color:#888899;font-weight:bold;text-transform:uppercase;letter-spacing:1px;font-size:12px;}</style></head><body><div id="weather"></div><div id="app"></div><div id="root"></div>${item.content}</body></html>`}
+                                                    className="w-full h-full border-none pointer-events-none"
+                                                    sandbox="allow-scripts allow-same-origin"
+                                                    scrolling="no"
+                                                />
+                                            </div>
+                                        ) : null}
+                                        
+                                        {/* Fallback View (Hidden unless no thumb or thumb fails) */}
+                                        <div className="w-full aspect-[4/5] flex-col items-center justify-center p-4 opacity-60" style={{ display: thumb ? 'none' : 'flex' }}>
+                                            {item.type === 'note' ? <FileText className="w-8 h-8 text-accent"/> : <LinkIcon className="w-8 h-8 text-[var(--text-muted)]"/>}
+                                        </div>
+
+                                        <div className="absolute top-2 right-2 flex flex-col gap-2 z-10 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                                            <button onClick={(e) => { e.stopPropagation(); onUpdate(item.id, { pinned: !item.pinned }); }} className={`w-10 h-10 rounded-full backdrop-blur flex items-center justify-center hover:scale-110 active-bounce shadow-md ${item.pinned ? 'bg-accent text-white' : 'bg-black/60 text-white'}`}><Bookmark className={`w-4 h-4 ${item.pinned ? 'fill-white' : ''}`}/></button>
+                                            <button onClick={(e) => { e.stopPropagation(); onUpdate(item.id, { liked: !item.liked }); }} className={`w-10 h-10 rounded-full backdrop-blur flex items-center justify-center hover:scale-110 active-bounce shadow-md ${item.liked ? 'bg-accent text-white' : 'bg-black/60 text-white'}`}><Heart className={`w-4 h-4 ${item.liked ? 'fill-white' : ''}`}/></button>
+                                        </div>
+                                        <div className="absolute top-3 left-3 flex gap-1 z-10">
+                                            {['video','hls','youtube'].includes(item.type) && <div className="w-6 h-6 rounded-full bg-black/80 backdrop-blur flex items-center justify-center shadow-lg"><Play className="w-3 h-3 text-white fill-white ml-0.5"/></div>}
+                                        </div>
+                                        {item.duration && (
+                                            <div className="absolute bottom-3 right-3 z-10">
+                                                <span className="bg-black/80 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-white font-bold tracking-widest shadow-lg">{formatDuration(item.duration)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="pt-2 px-1 flex flex-col">
+                                        <h4 className="text-sm font-bold text-[var(--text-main)] leading-tight line-clamp-2">{item.title || 'Untitled Node'}</h4>
+                                        <div className="flex items-center gap-1 mt-1 opacity-80">
+                                            {item.type === 'note' || item.type === 'embed' ? null : <div className="w-4 h-4 rounded-full bg-[var(--bg-input)] flex items-center justify-center overflow-hidden shrink-0"><LinkIcon className="w-2 h-2 text-[var(--text-muted)]"/></div>}
+                                            <span className="text-[10px] text-[var(--text-muted)] font-bold truncate">{getDomain(item.site || item.url)}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                ))}
+            </div>
+        );
+    };
+
+    /* ═══ WATCH SECTION (Reels & Videos) ═══ */
+    const ReelPlayer = ({ item, isActive, isMuted, toggleMute }) => {
+        const videoRef = useRef(null);
+        useEffect(() => {
+            if (!videoRef.current || !item.url) return;
+            if (item.type === 'hls' && window.Hls && window.Hls.isSupported()) {
+                const hls = new window.Hls({ startLevel: 0, enableWorker: false });
+                hls.loadSource(item.url); hls.attachMedia(videoRef.current);
+            }
+        }, [item]);
+        useEffect(() => {
+            if (isActive) videoRef.current?.play().catch(e => console.log("Autoplay prevented:", e));
+            else { videoRef.current?.pause(); if(videoRef.current) videoRef.current.currentTime = 0; }
+        }, [isActive]);
+        return (
+            <div className="relative w-full h-full bg-black cursor-pointer" onClick={toggleMute}>
+                <video ref={videoRef} src={item.type==='video'?item.url:undefined} className="w-full h-full object-cover" loop playsInline muted={isMuted} />
+                <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-black/50 p-4 rounded-full pointer-events-none transition-opacity duration-500 opacity-0 data-[show=true]:opacity-100" data-show={isMuted && isActive}>
+                    <VolumeX className="w-8 h-8 text-white" />
+                </div>
+            </div>
+        );
+    };
+
+    const ReelsFeed = ({ reels, onUpdate }) => {
+        const [currentIndex, setCurrentIndex] = useState(0);
+        const [isMuted, setIsMuted] = useState(true);
+        const containerRef = useRef(null);
+
+        const handleScroll = (e) => {
+            const index = Math.round(e.target.scrollTop / (window.innerHeight - 80));
+            if(index !== currentIndex && index >= 0 && index < reels.length) setCurrentIndex(index);
+        };
+
+        if(reels.length === 0) return (
+            <div className="absolute inset-0 z-10 flex items-center justify-center flex-col animate-in pb-20">
+                <Clapperboard className="w-16 h-16 text-white/30 mb-4"/>
+                <p className="text-white/50 font-bold uppercase tracking-widest text-sm">No Portrait Transmissions</p>
+            </div>
+        );
+
+        return (
+            <div className="reels-container hide-scroll animate-in" onScroll={handleScroll} ref={containerRef}>
+                <button onClick={() => setIsMuted(!isMuted)} className="fixed top-24 right-4 z-[60] w-10 h-10 rounded-full bg-black/40 backdrop-blur border border-white/10 flex items-center justify-center text-white active-bounce">
+                    {isMuted ? <VolumeX className="w-4 h-4"/> : <Volume2 className="w-4 h-4"/>}
+                </button>
+
+                {reels.map((reel, index) => {
+                    const isActive = index === currentIndex;
+                    return (
+                        <div key={reel.id} className="reel-snap">
+                            <ReelPlayer item={reel} isActive={isActive} isMuted={isMuted} toggleMute={() => setIsMuted(!isMuted)} />
+                            <div className="absolute bottom-0 inset-x-0 p-4 pb-6 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none flex items-end justify-between z-10">
+                                <div className="flex-1 pr-16 pointer-events-auto">
+                                    <h2 className="text-white font-bold text-lg leading-tight mb-2 drop-shadow-md">{reel.title || 'Unknown Entity'}</h2>
+                                    {reel.description && <p className="text-white/80 text-xs line-clamp-2 mb-2 drop-shadow-md">{reel.description}</p>}
+                                    <div className="flex flex-wrap gap-2">
+                                        {(reel.tags || []).slice(0,3).map(t => <span key={t} className="text-[10px] bg-white/20 text-white px-2 py-1 rounded-md font-bold drop-shadow-sm">{t}</span>)}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="absolute bottom-6 right-4 flex flex-col gap-6 z-20 pointer-events-auto items-center">
+                                <button onClick={() => onUpdate(reel.id, { liked: !reel.liked })} className="flex flex-col items-center gap-1 active-bounce hover:scale-110 spring-anim"><div className={`w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur ${reel.liked ? 'text-accent' : 'text-white'}`}><Heart className={`w-6 h-6 ${reel.liked ? 'fill-accent' : ''}`}/></div></button>
+                                <button onClick={() => onUpdate(reel.id, { pinned: !reel.pinned })} className="flex flex-col items-center gap-1 active-bounce hover:scale-110 spring-anim"><div className={`w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur ${reel.pinned ? 'text-accent' : 'text-white'}`}><Bookmark className={`w-6 h-6 ${reel.pinned ? 'fill-accent' : ''}`}/></div></button>
+                                <button onClick={() => { try { navigator.clipboard.writeText(reel.url); alert("Copied"); } catch(err) { document.execCommand('copy'); } }} className="flex flex-col items-center gap-1 active-bounce hover:scale-110 spring-anim"><div className="w-12 h-12 rounded-full flex items-center justify-center bg-black/40 backdrop-blur text-white"><Share2 className="w-6 h-6"/></div></button>
+                            </div>
+                        </div>
+                    )
+                })}
+            </div>
+        );
+    };
+
+    const VideoFeed = ({ videos, onSelectVideo }) => {
+        const [activeLandscape, setActiveLandscape] = useState(null);
+        const [isLandscape, setIsLandscape] = useState(false);
+
+        useEffect(() => {
+            const checkOrientation = () => {
+                const landscape = window.innerWidth > window.innerHeight;
+                setIsLandscape(landscape);
+            };
+            checkOrientation();
+            window.addEventListener('resize', checkOrientation);
+            return () => window.removeEventListener('resize', checkOrientation);
+        }, []);
+
+        const handleVideoClick = (v) => {
+            if (isLandscape) setActiveLandscape(v);
+            else onSelectVideo(v);
+        };
+
+        const trending = videos.slice(0, 5);
+        const forYou = videos.slice(0);
+
+        if (videos.length === 0) return (
+            <div className="absolute inset-0 z-10 flex items-center justify-center flex-col animate-in pb-20">
+                <Play className="w-16 h-16 opacity-20 mb-4" style={{color:'white'}}/>
+                <p className="font-bold uppercase tracking-widest text-sm" style={{color:'rgba(255,255,255,0.4)'}}>No Videos Yet</p>
+            </div>
+        );
+
+        return (
+            <>
+                <div className="video-feed-container hide-scroll animate-in">
+                    {/* Trending Section — horizontal scroll */}
+                    {trending.length > 0 && (
+                        <div className="mb-6">
+                            <p className="feed-section-head">Trending</p>
+                            <div className="trending-scroll">
+                                {trending.map(v => {
+                                    const thumb = getThumbnail(v);
+                                    return (
+                                        <div key={v.id} className="trending-card" onClick={() => handleVideoClick(v)}>
+                                            <div style={{position:'relative'}}>
+                                                {thumb ? <img src={thumb} alt={v.title} loading="lazy"/> : <div style={{width:'100%',aspectRatio:'16/9',background:'#222',display:'flex',alignItems:'center',justifyContent:'center'}}><Play style={{width:24,height:24,color:'rgba(255,255,255,0.3)'}}/></div>}
+                                                <div style={{position:'absolute',inset:0,background:'rgba(0,0,0,0.25)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                                    <div style={{width:36,height:36,borderRadius:'50%',background:'rgba(0,0,0,0.5)',backdropFilter:'blur(6px)',border:'1.5px solid rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                                        <Play style={{width:14,height:14,color:'white',fill:'white',marginLeft:2}}/>
+                                                    </div>
+                                                </div>
+                                                {v.duration && <span className="vid-duration-badge">{formatDuration(v.duration)}</span>}
+                                            </div>
+                                            <div className="trending-card-info">
+                                                <div className="trending-card-title">{v.title || 'Untitled'}</div>
+                                                <div className="trending-card-sub">
+                                                    <span>{v.artist || getDomain(v.site || v.url || '')}</span>
+                                                    <span>{formatNumber((v.savedAt%1000)*432)} views</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* For You — full-width vertical feed */}
+                    <p className="feed-section-head" style={{paddingTop:4}}>For you</p>
+                    <div>
+                        {forYou.map(v => {
+                            const thumb = getThumbnail(v);
+                            return (
+                                <div key={v.id} className="vid-card" onClick={() => handleVideoClick(v)}>
+                                    <div className="vid-card-thumb">
+                                        {thumb ? <img src={thumb} alt={v.title} loading="lazy"/> : (
+                                            <div style={{width:'100%',height:'100%',background:'#111',display:'flex',alignItems:'center',justifyContent:'center'}}>
+                                                <Play style={{width:32,height:32,color:'rgba(255,255,255,0.2)'}}/>
+                                            </div>
+                                        )}
+                                        <div className="vid-play-btn">
+                                            <div className="vid-play-circle">
+                                                <Play style={{width:22,height:22,color:'white',fill:'white',marginLeft:3}}/>
+                                            </div>
+                                        </div>
+                                        {v.duration && <span className="vid-duration-badge">{formatDuration(v.duration)}</span>}
+                                    </div>
+                                    <div className="vid-meta">
+                                        <div className="vid-avatar">{(v.artist || v.title || '?')[0].toUpperCase()}</div>
+                                        <div className="vid-info">
+                                            <div className="vid-title">{v.title || 'Unknown Transmission'}</div>
+                                            <div className="vid-sub">
+                                                <span>{v.artist || getDomain(v.site || v.url || '')}</span>
+                                                <span style={{color:'rgba(255,255,255,0.15)'}}>•</span>
+                                                <span>{formatNumber((v.savedAt%1000)*432)} views</span>
+                                            </div>
+                                        </div>
+                                        <button className="active-bounce btn-pop p-2 rounded-full" style={{color:'var(--text-muted)',background:'transparent',border:'none',cursor:'pointer'}} onClick={e=>{e.stopPropagation();}}>
+                                            <MoreHorizontal style={{width:20,height:20}}/>
+                                        </button>
+                                    </div>
+                                    <div className="vid-stats-row">
+                                        <div className="vid-stat"><Heart style={{width:16,height:16}}/>{formatNumber(Math.floor((v.savedAt||1)%500)*87)}</div>
+                                        <div className="vid-stat"><MessageSquare style={{width:16,height:16}}/>{formatNumber(Math.floor((v.savedAt||1)%100)*12)}</div>
+                                        <div className="vid-stat"><Share2 style={{width:16,height:16}}/>{formatNumber(Math.floor((v.savedAt||1)%50)*23)}</div>
+                                    </div>
+                                </div>
+                            )
+                        })}
+                    </div>
+                </div>
+
+                {/* Landscape scroll player */}
+                {activeLandscape && (
+                    <div className="landscape-player-overlay scale-in" style={{background:'#000'}}>
+                        <div style={{position:'absolute',top:16,left:16,right:16,display:'flex',justifyContent:'space-between',alignItems:'center',zIndex:10}}>
+                            <div style={{display:'flex',alignItems:'center',gap:10}}>
+                                <div className="vid-avatar" style={{width:32,height:32,fontSize:12}}>{(activeLandscape.artist||activeLandscape.title||'?')[0].toUpperCase()}</div>
+                                <span style={{color:'white',fontWeight:700,fontSize:13}}>{activeLandscape.artist||getDomain(activeLandscape.url||'')}</span>
+                            </div>
+                            <button onClick={() => setActiveLandscape(null)} className="active-bounce btn-pop" style={{width:36,height:36,borderRadius:'50%',background:'rgba(255,255,255,0.15)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.2)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',cursor:'pointer'}}>
+                                <X style={{width:18,height:18}}/>
+                            </button>
+                        </div>
+                        {activeLandscape.type === 'youtube' ? (
+                            <iframe src={`https://www.youtube.com/embed/${activeLandscape.url?.match(/([A-Za-z0-9_-]{11})/)?.[1]}?autoplay=1`} style={{width:'100%',height:'100%',border:'none'}} allowFullScreen allow="autoplay"/>
+                        ) : (
+                            <video src={activeLandscape.url} controls autoPlay playsInline style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                        )}
+                        <div style={{position:'absolute',bottom:20,insetInline:0,display:'flex',justifyContent:'center',gap:36,zIndex:10}}>
+                            {[
+                                {icon:<Heart style={{width:22,height:22}}/>, label:formatNumber(Math.floor((activeLandscape.savedAt||1)%500)*87)},
+                                {icon:<MessageSquare style={{width:22,height:22}}/>, label:formatNumber(Math.floor((activeLandscape.savedAt||1)%100)*12)},
+                                {icon:<Bookmark style={{width:22,height:22}}/>, label:formatNumber(Math.floor((activeLandscape.savedAt||1)%200)*5)},
+                                {icon:<Share2 style={{width:22,height:22}}/>, label:formatNumber(Math.floor((activeLandscape.savedAt||1)%50)*23)},
+                            ].map((a,i) => (
+                                <button key={i} className="active-bounce btn-pop" style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4,color:'rgba(255,255,255,0.8)',fontWeight:700,fontSize:11,background:'none',border:'none',cursor:'pointer'}}>
+                                    {a.icon}{a.label}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </>
+        );
+    };
+
+    const WatchSection = ({ items, onUpdate, onSelectVideo, onBack }) => {
+        const [subTab, setSubTab] = useState('videos');
+        
+        const allMedia = useMemo(() => items.filter(i => ['video', 'hls', 'youtube', 'drive'].includes(i.type)), [items]);
+        const reels = useMemo(() => allMedia.filter(i => i.isPortrait !== false), [allMedia]); 
+        const videos = useMemo(() => allMedia, [allMedia]);
+
+        return (
+            <div className="absolute inset-0" style={{background: subTab === 'reels' ? '#000' : 'var(--bg-base)'}}>
+                {/* Top Navigation */}
+                <div className="watch-header pointer-events-none">
+                    <button onClick={onBack} className="btn-pop active-bounce pointer-events-auto" style={{width:40,height:40,borderRadius:'50%',background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',cursor:'pointer'}}>
+                        <ChevronLeft style={{width:22,height:22}}/>
+                    </button>
+
+                    <div className="watch-tabs pointer-events-auto">
+                        <button className={`watch-tab-btn ${subTab==='reels'?'active':''}`} onClick={()=>setSubTab('reels')}>Reels</button>
+                        <button className={`watch-tab-btn ${subTab==='videos'?'active':''}`} onClick={()=>setSubTab('videos')}>Videos</button>
+                    </div>
+
+                    <button className="btn-pop active-bounce pointer-events-auto" style={{width:40,height:40,borderRadius:'50%',background:'rgba(255,255,255,0.12)',backdropFilter:'blur(10px)',border:'1px solid rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',cursor:'pointer'}}>
+                        <Camera style={{width:20,height:20}}/>
+                    </button>
+                </div>
+
+                {subTab === 'reels' ? (
+                    <ReelsFeed reels={allMedia} onUpdate={onUpdate} />
+                ) : (
+                    <VideoFeed videos={videos} onSelectVideo={onSelectVideo} />
+                )}
+            </div>
+        )
+    };
+
+    /* ═══ ITEM VIEWER ═══ */
+    const ItemViewer = ({ item, allItems, onClose, onUpdate, onDelete, onAI, onTagClick }) => {
+        if (!item) return null;
+        const [showTagInput, setShowTagInput] = useState(false); const [newTag, setNewTag] = useState('');
+        const [showComments, setShowComments] = useState(false); const [newComment, setNewComment] = useState('');
+        const [descExpanded, setDescExpanded] = useState(false); const [isEditingMeta, setIsEditingMeta] = useState(false);
+        const [metaForm, setMetaForm] = useState({ artist: item.artist||'', character: item.character||'', source: item.source||'' });
+
+        const tags = item.tags || []; const comments = item.comments || []; const cleanDomain = getDomain(item.url || item.site);
+        const isVideoNode = ['video', 'hls', 'youtube', 'drive'].includes(item.type);
+        const itemThumb = getThumbnail(item);
+
+        const related = useMemo(() => {
+            return allItems.filter(i => i.id !== item.id && (
+                (i.artist && i.artist === item.artist) || (i.character && i.character === item.character) ||
+                (i.tags && item.tags && i.tags.some(t => item.tags.includes(t))) || (i.type === item.type)
+            )).slice(0, 10);
+        }, [item, allItems]);
+
+        const toggleLike = () => onUpdate(item.id, { liked: !item.liked });
+        const togglePin = () => onUpdate(item.id, { pinned: !item.pinned });
+        const handleAddTag = (e) => { if (e.key === 'Enter' && newTag.trim()) { onUpdate(item.id, { tags: [...new Set([...tags, newTag.trim().toLowerCase()])] }); setNewTag(''); setShowTagInput(false); } };
+        const removeTag = (t, e) => { e.stopPropagation(); onUpdate(item.id, { tags: tags.filter(tag => tag !== t) }); };
+        const handleAddComment = () => { if (!newComment.trim()) return; onUpdate(item.id, { comments: [...comments, { text: newComment.trim(), date: Date.now() }] }); setNewComment(''); };
+        const executeTagClick = (t) => { onClose(); if(onTagClick) onTagClick(t); }
+
+        return (
+            <div className="viewer-overlay animate-in">
+                {/* Top bar — back + delete */}
+                <div style={{position:'absolute',top:0,left:0,right:0,padding:'calc(var(--safe-top) + 8px) 16px 12px 16px',zIndex:50,display:'flex',justifyContent:'space-between',alignItems:'center',background:'rgba(0,0,0,0.55)',backdropFilter:'blur(10px)',borderBottom:'1px solid rgba(255,255,255,0.06)'}}>
+                    <button onClick={onClose} className="active-bounce btn-pop" style={{width:40,height:40,borderRadius:'50%',background:'rgba(255,255,255,0.1)',border:'1px solid rgba(255,255,255,0.12)',display:'flex',alignItems:'center',justifyContent:'center',color:'white',cursor:'pointer'}}>
+                        <ChevronLeft style={{width:22,height:22}}/>
+                    </button>
+                    <span style={{fontFamily:'Syne,sans-serif',fontWeight:800,fontSize:15,color:'rgba(255,255,255,0.9)',letterSpacing:1,textTransform:'uppercase',maxWidth:'60%',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{item.title || 'Item'}</span>
+                    <button onClick={() => onDelete(item.id)} className="active-bounce btn-pop" style={{width:40,height:40,borderRadius:'50%',background:'rgba(220,38,38,0.15)',border:'1px solid rgba(220,38,38,0.25)',display:'flex',alignItems:'center',justifyContent:'center',color:'#f87171',cursor:'pointer'}}>
+                        <Trash2 style={{width:18,height:18}}/>
+                    </button>
+                </div>
+
+                {/* Media area */}
+                {isVideoNode ? (
+                    <div className="cinematic-wrapper" style={{marginTop:'calc(var(--safe-top) + 64px)'}}>
+                        <div className="viewer-media-container">
+                            {item.type === 'youtube' ? (
+                                <iframe src={`https://www.youtube.com/embed/${item.url?.match(/([A-Za-z0-9_-]{11})/)?.[1]}?autoplay=1`} style={{width:'100%',height:'100%',border:'none'}} allowFullScreen allow="autoplay" />
+                            ) : item.type === 'drive' ? (
+                                (() => {
+                                    const driveId = item.url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/)?.[1];
+                                    const directUrl = `https://drive.google.com/uc?export=download&id=${driveId}&confirm=t`;
+                                    return (
+                                        <video
+                                            key={driveId}
+                                            src={directUrl}
+                                            controls
+                                            autoPlay
+                                            playsInline
+                                            className="viewer-media"
+                                            style={{width:'100%',height:'100%',background:'#000',objectFit:'contain'}}
+                                            onError={(e) => {
+                                                // Fallback: open in Drive directly
+                                                e.target.style.display='none';
+                                                e.target.parentNode.innerHTML = `<div style="width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;padding:24px;background:#000"><p style="color:#fff;font-size:13px;font-weight:700;text-align:center;opacity:0.7">Large file — tap to open in Google Drive</p><a href="${item.url}" target="_blank" style="padding:14px 28px;background:rgba(255,255,255,0.1);border:1.5px solid rgba(255,255,255,0.25);color:#fff;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;border-radius:16px;text-decoration:none">Open in Drive ↗</a></div>`;
+                                            }}
+                                        />
+                                    );
+                                })()
+                            ) : (
+                                <video src={item.url} id={`vid-${item.id}`} controls autoPlay className="viewer-media" playsInline />
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <div style={{marginTop:'calc(var(--safe-top) + 64px)',flexShrink:0,background:'var(--bg-panel)',display:'flex',justifyContent:'center',alignItems:'center',minHeight:'38vh',maxHeight:'48vh',overflow:'hidden'}}>
+                        {item.type === 'embed' ? (
+                            <iframe srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:16px;color:#f0f0f0;font-family:'Space Mono',monospace;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:100vh;background:#000;text-align:center;}h1,h2,h3{font-family:'Syne',sans-serif;margin:0 0 8px 0;font-size:2rem;color:white;}p{margin:0;color:#888899;font-weight:bold;text-transform:uppercase;letter-spacing:2px;}</style></head><body><div id="weather"></div><div id="app"></div><div id="root"></div>${item.content}</body></html>`} style={{width:'100%',height:'38vh',border:'none',background:'#000'}} sandbox="allow-scripts allow-same-origin allow-popups allow-forms"/>
+                        ) : item.type === 'note' ? (
+                            <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center',padding:32}}>
+                                <p style={{fontSize:18,fontWeight:700,whiteSpace:'pre-wrap',textAlign:'center',color:'var(--text-main)',maxHeight:'38vh',overflowY:'auto'}}>{item.content}</p>
+                            </div>
+                        ) : itemThumb ? (
+                            <img src={itemThumb} style={{maxWidth:'100%',maxHeight:'46vh',objectFit:'contain'}} onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}/>
+                        ) : (
+                            <div style={{width:'100%',height:'100%',display:'flex',alignItems:'center',justifyContent:'center'}}><LinkIcon style={{width:48,height:48,color:'var(--text-muted)'}}/></div>
+                        )}
+                        <div style={{display:'none',width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}><LinkIcon style={{width:48,height:48,color:'var(--text-muted)'}}/></div>
+                    </div>
+                )}
+
+                {/* HLS init */}
+                {item.type === 'hls' && React.useEffect(() => {
+                    const v = document.getElementById(`vid-${item.id}`);
+                    if(v && window.Hls && window.Hls.isSupported()) { const hls = new window.Hls(); hls.loadSource(item.url); hls.attachMedia(v); }
+                }, [item.url])}
+
+                {/* Avdan action bar — icon + count */}
+                <div className="action-bar-avdan">
+                    <button className={`avdan-action-btn ${item.liked ? 'active' : ''}`} onClick={toggleLike}>
+                        <Heart style={item.liked ? {fill:'var(--accent)',width:24,height:24} : {width:24,height:24}}/>
+                        <span>{formatNumber(Math.floor((item.savedAt||1)%500)*87 + (item.liked?1:0))}</span>
+                    </button>
+                    <button className="avdan-action-btn" onClick={() => setShowComments(true)}>
+                        <MessageSquare style={{width:24,height:24}}/>
+                        <span>{comments.length > 0 ? formatNumber(comments.length) : Math.floor((item.savedAt||1)%100)*12}</span>
+                    </button>
+                    <button className="avdan-action-btn" style={{position:'relative'}} onClick={() => setShowComments(true)}>
+                        <Share2 style={{width:24,height:24}}/>
+                        <span>{formatNumber(Math.floor((item.savedAt||1)%200)*3)}</span>
+                    </button>
+                    <button className="avdan-action-btn" style={{fontSize:10}}>
+                        {/* bar chart stats icon */}
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+                        <span>{formatNumber((item.savedAt%1000)*432)}</span>
+                    </button>
+                    <button className={`avdan-action-btn ${item.pinned ? 'active' : ''}`} onClick={togglePin}>
+                        <Bookmark style={item.pinned ? {fill:'var(--accent)',width:24,height:24} : {width:24,height:24}}/>
+                        <span>{formatNumber(Math.floor((item.savedAt||1)%300)*5 + (item.pinned?1:0))}</span>
+                    </button>
+                    <button className="avdan-action-btn" onClick={() => { try{navigator.clipboard.writeText(item.url||''); alert('Copied');}catch(e){} }}>
+                        <Send style={{width:24,height:24}}/>
+                        <span>{formatNumber(Math.floor((item.savedAt||1)%50)*23)}</span>
+                    </button>
+                </div>
+
+                {/* Scrollable info body */}
+                <div className="viewer-info hide-scroll">
+                    <div className="viewer-info-inner">
+
+                        {/* Title */}
+                        <div className="viewer-title-row">
+                            <h1 style={{fontFamily:'Syne,sans-serif',fontWeight:900,fontSize:22,color:'var(--text-main)',lineHeight:1.2,marginBottom:6}}>{item.title || 'Unknown Entity'}</h1>
+                            <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
+                                <span style={{fontSize:12,fontWeight:700,color:'var(--text-muted)',letterSpacing:0.4}}>{new Date(item.savedAt||0).toLocaleDateString()}</span>
+                                {item.url && <a href={item.url} target="_blank" style={{fontSize:11,fontWeight:700,color:'var(--accent)',background:'rgba(var(--accent-rgb),0.1)',padding:'4px 10px',borderRadius:8,border:'1px solid rgba(var(--accent-rgb),0.25)',display:'flex',alignItems:'center',gap:4,textDecoration:'none'}}><LinkIcon style={{width:11,height:11}}/>{cleanDomain}</a>}
+                            </div>
+                        </div>
+
+                        {/* Channel row */}
+                        <div className="viewer-channel-row">
+                            <div className="viewer-channel-avatar">{(item.artist || item.title || '?')[0].toUpperCase()}</div>
+                            <div>
+                                <div className="viewer-channel-name" onClick={()=>item.artist&&executeTagClick(item.artist)} style={item.artist?{cursor:'pointer',color:'var(--accent)'}:{}}>{item.artist || 'Unknown'}</div>
+                                <div className="viewer-channel-sub">{item.source || item.character || 'Original'}</div>
+                            </div>
+                            <button className="follow-btn active-bounce" onClick={()=>onUpdate(item.id,{following:!item.following})} style={item.following?{background:'var(--accent)',borderColor:'var(--accent)',color:'#fff'}:{}}>{item.following ? 'Following' : 'Follow'}</button>
+                        </div>
+
+                        {/* Meta card */}
+                        <div className="meta-card">
+                            <button onClick={()=>setIsEditingMeta(!isEditingMeta)} style={{position:'absolute',top:12,right:12,background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',padding:4}} className="active-bounce"><Edit3 style={{width:16,height:16}}/></button>
+                            {isEditingMeta ? (
+                                <div style={{display:'flex',flexDirection:'column',gap:10}}>
+                                    {[['Artist','artist'],['Character','character'],['Series','source']].map(([label,key])=>(
+                                        <div key={key} style={{display:'flex',alignItems:'center',gap:8}}>
+                                            <span className="meta-label">{label}</span>
+                                            <input value={metaForm[key]} onChange={e=>setMetaForm({...metaForm,[key]:e.target.value})} style={{flex:1,background:'rgba(255,255,255,0.05)',border:'1px solid var(--border-color)',borderRadius:10,padding:'8px 12px',fontSize:13,fontWeight:700,color:'var(--text-main)',outline:'none'}} placeholder="Unknown..."/>
+                                        </div>
+                                    ))}
+                                    <button onClick={()=>{onUpdate(item.id,{...metaForm});setIsEditingMeta(false);}} style={{width:'100%',background:'var(--accent)',color:'#fff',border:'none',borderRadius:12,padding:'10px',fontSize:12,fontWeight:700,textTransform:'uppercase',letterSpacing:1,cursor:'pointer',marginTop:4}} className="active-bounce">Save</button>
+                                </div>
+                            ) : (
+                                <>
+                                    {[['Artist',item.artist||'Unknown','artist'],['Character',item.character||'Original','character'],['Series',item.source||'Original','source']].map(([label,val,key])=>(
+                                        <div className="meta-row" key={key}>
+                                            <span className="meta-label">{label}</span>
+                                            <span className="meta-value" onClick={()=>item[key]&&executeTagClick(item[key])} style={item[key]?{color:'var(--accent)',cursor:'pointer'}:{color:'var(--text-muted)'}}>{val}</span>
+                                        </div>
+                                    ))}
+                                </>
+                            )}
+                        </div>
+
+                        {/* Description */}
+                        {item.description && (
+                            <div style={{background:'var(--bg-input)',border:'1px solid var(--border-color)',borderRadius:20,padding:16,marginBottom:16}}>
+                                <p style={{fontSize:13,color:'var(--text-main)',lineHeight:1.6,whiteSpace:'pre-wrap',display:descExpanded?'block':'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden'}}>{item.description}</p>
+                                <button onClick={()=>setDescExpanded(!descExpanded)} style={{fontSize:11,fontWeight:700,color:'var(--accent)',textTransform:'uppercase',letterSpacing:1,background:'none',border:'none',cursor:'pointer',marginTop:8,padding:0}} className="active-bounce">{descExpanded?'Show Less':'Read More'}</button>
+                            </div>
+                        )}
+
+                        {/* Tags */}
+                        <div style={{marginBottom:16}}>
+                            <h3 style={{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.2,color:'var(--text-muted)',marginBottom:10,display:'flex',alignItems:'center',gap:6}}><Tag style={{width:14,height:14}}/> Tags</h3>
+                            <div style={{display:'flex',flexWrap:'wrap',gap:8,alignItems:'center'}}>
+                                {tags.map(t => (
+                                    <span key={t} onClick={() => executeTagClick(t)} className="tag-chip group" style={{position:'relative',paddingRight:24}}>
+                                        {t}
+                                        <button onClick={(e)=>removeTag(t,e)} style={{position:'absolute',right:6,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',color:'white',cursor:'pointer',padding:0,opacity:0.6}} className="active-bounce"><X style={{width:10,height:10}}/></button>
+                                    </span>
+                                ))}
+                                {showTagInput ? (
+                                    <input autoFocus value={newTag} onChange={e=>setNewTag(e.target.value)} onKeyDown={handleAddTag} onBlur={()=>setShowTagInput(false)} placeholder="add tag..." style={{fontSize:11,fontWeight:700,padding:'8px 14px',borderRadius:999,background:'var(--bg-input)',border:'1.5px dashed var(--border-color)',color:'var(--text-main)',outline:'none',width:110}}/>
+                                ) : (
+                                    <button onClick={()=>setShowTagInput(true)} style={{fontSize:11,fontWeight:700,padding:'8px 14px',borderRadius:999,background:'var(--bg-input)',border:'1px solid var(--border-color)',color:'var(--text-main)',cursor:'pointer',display:'flex',alignItems:'center',gap:4}} className="active-bounce"><Plus style={{width:12,height:12}}/>Add</button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* AI auto-tag button */}
+                        <button onClick={() => onAI(item)} style={{width:'100%',background:'rgba(var(--accent-rgb),0.1)',border:'1.5px solid rgba(var(--accent-rgb),0.3)',color:'var(--accent)',borderRadius:16,padding:'12px',fontSize:12,fontWeight:700,textTransform:'uppercase',letterSpacing:1,cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8,marginBottom:24}} className="active-bounce">
+                            <Bot style={{width:18,height:18}}/> Auto-Tag with AI
+                        </button>
+
+                        {/* Related */}
+                        {related.length > 0 && (
+                            <div style={{borderTop:'1px solid var(--border-color)',paddingTop:20}}>
+                                <h3 style={{fontSize:11,fontWeight:700,textTransform:'uppercase',letterSpacing:1.2,color:'var(--text-muted)',marginBottom:12,display:'flex',alignItems:'center',gap:6}}><Grid3X3 style={{width:14,height:14}}/> Similar</h3>
+                                <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>
+                                    {related.map(r => {
+                                        const rThumb = getThumbnail(r);
+                                        return (
+                                            <div key={r.id} style={{position:'relative',aspectRatio:'4/5',borderRadius:20,overflow:'hidden',background:'var(--bg-input)',cursor:'pointer'}} className="active-bounce" onClick={() => { onClose(); setTimeout(()=>onUpdate('view', r), 100); }}>
+                                                {rThumb ? <img src={rThumb} style={{width:'100%',height:'100%',objectFit:'cover'}} loading="lazy" onError={(e)=>{e.target.style.display='none'; e.target.nextSibling.style.display='flex'}}/> : null}
+                                                <div style={{display:rThumb?'none':'flex', width:'100%',height:'100%',alignItems:'center',justifyContent:'center'}}><LinkIcon style={{width:28,height:28,color:'var(--text-muted)'}}/></div>
+                                                {['video','hls','youtube'].includes(r.type) && <div style={{position:'absolute',top:8,right:8,width:28,height:28,borderRadius:'50%',background:'rgba(0,0,0,0.6)',backdropFilter:'blur(4px)',display:'flex',alignItems:'center',justifyContent:'center'}}><Play style={{width:12,height:12,color:'white',fill:'white',marginLeft:2}}/></div>}
+                                                <div style={{position:'absolute',bottom:0,insetInline:0,padding:'20px 10px 10px 10px',background:'linear-gradient(to top, rgba(0,0,0,0.85), transparent)'}}>
+                                                    <span style={{color:'white',fontSize:11,fontWeight:700,display:'block',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{r.title||r.type}</span>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+                {/* Comment Drawer */}
+                {showComments && (
+                    <div className="fixed inset-x-0 bottom-0 z-[550] glass-heavy rounded-t-[32px] p-6 slide-up max-h-[75vh] flex flex-col border-t border-[var(--border-color)] shadow-[0_-10px_50px_rgba(0,0,0,0.5)]">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="syne font-bold text-xl uppercase tracking-widest text-[var(--text-main)]">Comments ({comments.length})</h3>
+                            <button onClick={() => setShowComments(false)} className="w-10 h-10 bg-[var(--bg-input)] rounded-full flex items-center justify-center spring-anim active-bounce touch-ripple"><X className="w-5 h-5"/></button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-4 mb-6 hide-scroll">
+                            {comments.map((c, i) => (
+                                <div key={i} className="bg-[var(--bg-input)] p-4 rounded-[20px] border border-[var(--border-color)]">
+                                    <p className="text-[10px] text-[var(--text-muted)] mb-2 uppercase tracking-widest font-bold">{new Date(c.date).toLocaleString()}</p>
+                                    <p className="text-sm font-medium leading-relaxed">{c.text}</p>
+                                </div>
+                            ))}
+                            {comments.length === 0 && <p className="text-center text-[var(--text-muted)] text-sm my-10 font-bold uppercase tracking-widest">No comments yet.</p>}
+                        </div>
+                        <div className="flex gap-3">
+                            <input value={newComment} onChange={e=>setNewComment(e.target.value)} onKeyDown={e=>e.key==='Enter'&&handleAddComment()} placeholder="Add a comment..." className="flex-1 bg-[var(--bg-input)] border border-[var(--border-color)] rounded-[20px] p-4 outline-none text-sm focus:border-accent spring-anim" />
+                            <button onClick={handleAddComment} className="w-14 rounded-[20px] bg-accent flex justify-center items-center text-white active-bounce shadow-lg shadow-accent/30"><Send className="w-5 h-5"/></button>
+                        </div>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
+    /* ═══ SMART INJECT MODAL ═══ */
+    const AddModal = ({ onClose, onSave }) => {
+        const [inputVal, setInputVal] = useState('');
+        const [fetching, setFetching] = useState(false);
+        const [bulkLinks, setBulkLinks] = useState([]); // auto-detected multi-url mode
+        const [importing, setImporting] = useState(false);
+        const [importDone, setImportDone] = useState(false);
+
+        const isBulkMode = bulkLinks.length > 0;
+        const [uploading, setUploading] = useState(false);
+        const fileInputRef = useRef(null);
+
+        const handleGalleryPick = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            setUploading(true);
+            try {
+                const { primary, imgbbUrl, cloudUrl } = await uploadMediaFile(file);
+                const isVid = file.type.startsWith('video/');
+                const type = isVid ? 'video' : 'image';
+                let finalThumb = null, finalDuration = null, finalIsPortrait = false;
+                if (isVid) {
+                    const meta = await generateVideoMeta(primary, 'video');
+                    finalThumb = meta.thumb; finalDuration = meta.duration; finalIsPortrait = meta.isPortrait;
+                } else { finalThumb = primary; }
+                await onSave({ url: primary, type, site: 'Gallery', collection: 'RAW', thumb: finalThumb, title: file.name.replace(/\.[^.]+$/, '') || 'Gallery Upload', duration: finalDuration, isPortrait: finalIsPortrait, tags: [type, 'gallery'], artist: '', character: '', source: '', description: '', imgbbUrl, cloudUrl, healed: true });
+                onClose();
+            } catch(e) { alert('Upload failed: ' + e.message); }
+            finally { setUploading(false); }
+        };
+
+        // Called on every textarea change — auto-detects multiple URLs
+        const handleChange = (e) => {
+            const val = e.target.value;
+            setInputVal(val);
+            const urls = val.split(/[\n,]+/).map(s => s.trim()).filter(s => /^https?:\/\//i.test(s));
+            const unique = [...new Set(urls)];
+            if (unique.length >= 2) {
+                setBulkLinks(unique.map(url => ({ url, status: 'pending' })));
+            } else {
+                setBulkLinks([]);
+                setImportDone(false);
+            }
+        };
+
+        const removeLink = (i) => setBulkLinks(prev => prev.filter((_, idx) => idx !== i));
+
+        const saveOneUrl = async (url) => {
+            const type = getMediaType(url); const site = getDomain(url);
+            let finalThumb = null, finalDuration = null, finalIsPortrait = false;
+            if (['video','hls'].includes(type)) {
+                const vMeta = await generateVideoMeta(url, type);
+                finalThumb = vMeta.thumb; finalDuration = vMeta.duration; finalIsPortrait = vMeta.isPortrait;
+            } else if (type === 'image') { finalThumb = url; }
+            else { finalThumb = await fetchMetaImage(url); }
+            await onSave({ url, type, site, collection: 'RAW', thumb: finalThumb, title: 'New Item', duration: finalDuration, isPortrait: finalIsPortrait, tags: [type], artist: '', character: '', source: '', description: '', healed: true });
+        };
+
+        const handleBulkImport = async () => {
+            setImporting(true);
+            for (let i = 0; i < bulkLinks.length; i++) {
+                if (bulkLinks[i].status === 'done') continue;
+                setBulkLinks(prev => prev.map((l, idx) => idx === i ? { ...l, status: 'saving' } : l));
+                try {
+                    await saveOneUrl(bulkLinks[i].url);
+                    setBulkLinks(prev => prev.map((l, idx) => idx === i ? { ...l, status: 'done' } : l));
+                } catch(e) {
+                    setBulkLinks(prev => prev.map((l, idx) => idx === i ? { ...l, status: 'error' } : l));
+                }
+            }
+            setImporting(false);
+            setImportDone(true);
+        };
+
+        const handleSingleSave = async () => {
+            const val = inputVal.trim();
+            if (!val) return;
+            setFetching(true);
+            try {
+                const urlLines = val.split(/\n+/).map(l => l.trim()).filter(l => /^https?:\/\//i.test(l));
+                if (urlLines.length >= 2) {
+                    const directImg = urlLines.find(l => /\.(jpg|jpeg|png|webp|gif|avif)(\?|$)/i.test(l));
+                    const directVid = urlLines.find(l => /\.(mp4|m3u8|webm|mov)(\?|$)/i.test(l) || /fbcdn\.net/i.test(l));
+                    const pageUrl = urlLines.find(l => l !== directImg && l !== directVid);
+                    if (directImg && pageUrl) { await onSave({ url: directImg, type: 'image', site: getDomain(pageUrl), collection: 'RAW', thumb: directImg, title: 'New Item', duration: null, isPortrait: false, tags: ['image'], artist: '', character: '', source: pageUrl, description: '', healed: true }); return; }
+                    if (directVid && pageUrl) { const pt = getMediaType(directVid); const pm = await generateVideoMeta(directVid, pt); let pth = pm.thumb; if (!pth) pth = await fetchMetaImage(pageUrl); await onSave({ url: directVid, type: pt, site: getDomain(pageUrl), collection: 'RAW', thumb: pth, title: 'New Item', duration: pm.duration, isPortrait: pm.isPortrait, tags: [pt], artist: '', character: '', source: pageUrl, description: '', healed: true }); return; }
+                }
+                // Drive link auto-convert
+                if (isDriveUrl(val.trim())) {
+                    const drive = convertDriveUrl(val.trim());
+                    await onSave({ url: val.trim(), type: 'drive', site: 'Google Drive', collection: 'RAW', thumb: null, title: 'Drive File', duration: null, isPortrait: false, tags: ['drive', 'video'], artist: '', character: '', source: '', description: '', healed: true });
+                    return;
+                }
+                const isEmbed = val.startsWith('<iframe') || val.includes('<script');
+                const isUrl = /^https?:\/\//i.test(val) && !/\s/.test(val);
+                if (isEmbed) { await onSave({ url: '', content: val, type: 'embed', site: 'Embedded', collection: 'RAW', thumb: null, title: 'Embedded Content', duration: null, isPortrait: false, tags: ['embed'], artist: '', character: '', source: '', description: '' }); }
+                else if (isUrl) {
+                    const safeUrl = val.startsWith('http') ? val : `https://${val}`;
+                    const type = getMediaType(safeUrl); const site = getDomain(safeUrl);
+                    let finalThumb = null, finalDuration = null, finalIsPortrait = false;
+                    if (['video','hls'].includes(type)) { const vMeta = await generateVideoMeta(safeUrl, type); finalThumb = vMeta.thumb; finalDuration = vMeta.duration; finalIsPortrait = vMeta.isPortrait; }
+                    else if (type === 'link') { finalThumb = await fetchMetaImage(safeUrl); }
+                    await onSave({ url: safeUrl, type, site, collection: 'RAW', thumb: finalThumb, title: 'New Item', duration: finalDuration, isPortrait: finalIsPortrait, tags: [type], artist: '', character: '', source: '', description: '', healed: true });
+                } else {
+                    const titleMatch = val.split('\n')[0].substring(0, 40);
+                    await onSave({ url: '', content: val, type: 'note', site: 'Note', collection: 'Notes', thumb: null, title: titleMatch || 'Untitled Note', duration: null, isPortrait: false, tags: ['note'], artist: '', character: '', source: '', description: val.substring(0, 100) });
+                }
+            } catch(e) { alert("Upload failed: " + e.message); }
+            finally { setFetching(false); onClose(); }
+        };
+
+        const statusIcon = (status) => {
+            if (status === 'pending') return <span style={{fontSize:14,color:'var(--text-muted)'}}>○</span>;
+            if (status === 'saving') return <Loader style={{width:14,height:14,color:'var(--accent)'}} className="animate-spin"/>;
+            if (status === 'done') return <span style={{fontSize:14,color:'#22c55e'}}>✓</span>;
+            if (status === 'error') return <span style={{fontSize:14,color:'#ef4444'}}>✗</span>;
+        };
+
+        const doneCount = bulkLinks.filter(l => l.status === 'done').length;
+        const errCount = bulkLinks.filter(l => l.status === 'error').length;
+
+        return (
+            <div className="fixed inset-0 z-[500] bg-[var(--overlay)] backdrop-blur-md flex items-end sm:items-center justify-center sm:p-4" onClick={e => e.target===e.currentTarget && onClose()}>
+                <div className="w-full max-w-md glass-heavy rounded-t-[32px] sm:rounded-[32px] p-6 slide-up border border-[var(--border-color)] shadow-2xl" style={{maxHeight:'85vh',display:'flex',flexDirection:'column'}}>
+                    
+                    <div className="flex justify-between items-center mb-4" style={{flexShrink:0}}>
+                        <div>
+                            <h2 className="syne text-xl font-bold uppercase tracking-widest text-[var(--text-main)]">{isBulkMode ? 'Bulk Import' : 'Inject Asset'}</h2>
+                            {isBulkMode && <p style={{fontSize:11,color:'var(--accent)',fontWeight:700,letterSpacing:1,marginTop:2}}>{bulkLinks.length} LINKS DETECTED</p>}
+                        </div>
+                        <button onClick={onClose} className="w-10 h-10 bg-[var(--bg-input)] rounded-full flex items-center justify-center spring-anim active-bounce"><X className="w-5 h-5"/></button>
+                    </div>
+
+                    {/* Textarea — always visible, shrinks in bulk mode */}
+                    <textarea
+                        className="w-full p-4 rounded-[20px] bg-[var(--bg-input)] border border-[var(--border-color)] outline-none focus:border-[var(--accent)] spring-anim text-sm font-bold resize-none shadow-inner"
+                        style={{minHeight: isBulkMode ? 60 : 140, marginBottom:12, flexShrink:0, transition:'min-height 0.3s'}}
+                        placeholder="Paste one link, many links, a note, or embed HTML..."
+                        value={inputVal}
+                        onChange={handleChange}
+                    />
+
+                    {/* BULK MODE: live link list */}
+                    {isBulkMode && (
+                        <div style={{flex:1,overflowY:'auto',marginBottom:12,display:'flex',flexDirection:'column',gap:8}}>
+                            {bulkLinks.map((l, i) => (
+                                <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:14,background:'var(--bg-input)',border:`1px solid ${l.status==='done'?'rgba(34,197,94,0.3)':l.status==='error'?'rgba(239,68,68,0.3)':'var(--border-color)'}`,transition:'border-color 0.3s'}}>
+                                    <div style={{flexShrink:0,width:20,display:'flex',justifyContent:'center'}}>{statusIcon(l.status)}</div>
+                                    <span style={{flex:1,fontSize:11,fontWeight:700,color:'var(--text-main)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.url}</span>
+                                    {!importing && l.status === 'pending' && (
+                                        <button onClick={()=>removeLink(i)} style={{background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',padding:0,flexShrink:0}} className="active-bounce"><X style={{width:13,height:13}}/></button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Done summary */}
+                    {importDone && (
+                        <div style={{flexShrink:0,padding:'10px 14px',borderRadius:14,background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.25)',marginBottom:12,fontSize:12,fontWeight:700,display:'flex',gap:16,justifyContent:'center'}}>
+                            <span style={{color:'#22c55e'}}>✓ {doneCount} saved</span>
+                            {errCount > 0 && <span style={{color:'#ef4444'}}>✗ {errCount} failed</span>}
+                        </div>
+                    )}
+
+                    {/* Gallery upload button */}
+                    {!isBulkMode && (
+                        <div style={{flexShrink:0,marginBottom:10}}>
+                            <input ref={fileInputRef} type="file" accept="image/*,video/*" style={{display:'none'}} onChange={handleGalleryPick}/>
+                            <button onClick={()=>fileInputRef.current.click()} disabled={uploading} className="active-bounce touch-ripple" style={{width:'100%',padding:'13px',borderRadius:16,background:'rgba(255,255,255,0.06)',border:'1.5px solid rgba(255,255,255,0.15)',color:'#fff',fontSize:11,fontWeight:800,letterSpacing:2,textTransform:'uppercase',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                                {uploading ? <><Loader style={{width:15,height:15}} className="animate-spin"/> Uploading...</> : <><Camera style={{width:15,height:15}}/> Upload from Gallery</>}
+                            </button>
+                        </div>
+                    )}
+
+                    {/* Action button */}
+                    <div style={{flexShrink:0}}>
+                        {!isBulkMode && (
+                            <button onClick={handleSingleSave} disabled={fetching} className="btn-action btn-primary active-bounce text-sm shadow-xl touch-ripple">
+                                {fetching ? <Loader className="w-5 h-5 animate-spin"/> : 'Upload Node'}
+                            </button>
+                        )}
+                        {isBulkMode && !importDone && !importing && (
+                            <button onClick={handleBulkImport} className="btn-action btn-primary active-bounce text-sm touch-ripple">
+                                Import {bulkLinks.length} Links
+                            </button>
+                        )}
+                        {importing && (
+                            <div className="btn-action btn-secondary" style={{justifyContent:'center',gap:8}}>
+                                <Loader className="w-4 h-4 animate-spin"/> Importing...
+                            </div>
+                        )}
+                        {importDone && (
+                            <button onClick={onClose} className="btn-action btn-primary active-bounce text-sm touch-ripple">Done</button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    /* ═══ BULK IMPORT MODAL ═══ */
+    const BulkImportModal = ({ onClose, onSave }) => {
+        const [links, setLinks] = useState([]); // [{url, status: 'pending'|'saving'|'done'|'error', msg}]
+        const [importing, setImporting] = useState(false);
+        const [done, setDone] = useState(false);
+
+        const parsePaste = (text) => {
+            const urls = text
+                .split(/[\n,]+/)
+                .map(s => s.trim())
+                .filter(s => /^https?:\/\//i.test(s));
+            return [...new Set(urls)].map(url => ({ url, status: 'pending', msg: '' }));
+        };
+
+        const handlePaste = async () => {
+            try {
+                const text = await navigator.clipboard.readText();
+                const parsed = parsePaste(text);
+                if (parsed.length === 0) { alert('No valid URLs found in clipboard.'); return; }
+                setLinks(parsed);
+                setDone(false);
+            } catch(e) {
+                alert('Clipboard access denied. Please allow clipboard permission.');
+            }
+        };
+
+        const saveOneUrl = async (url) => {
+            const type = getMediaType(url);
+            const site = getDomain(url);
+            let finalThumb = null, finalDuration = null, finalIsPortrait = false;
+            if (['video','hls'].includes(type)) {
+                const vMeta = await generateVideoMeta(url, type);
+                finalThumb = vMeta.thumb; finalDuration = vMeta.duration; finalIsPortrait = vMeta.isPortrait;
+            } else if (type === 'image') {
+                finalThumb = url;
+            } else {
+                finalThumb = await fetchMetaImage(url);
+            }
+            await onSave({ url, type, site, collection: 'RAW', thumb: finalThumb, title: 'New Item', duration: finalDuration, isPortrait: finalIsPortrait, tags: [type], artist: '', character: '', source: '', description: '', healed: true });
+        };
+
+        const handleImport = async () => {
+            if (links.length === 0) return;
+            setImporting(true);
+            for (let i = 0; i < links.length; i++) {
+                setLinks(prev => prev.map((l, idx) => idx === i ? { ...l, status: 'saving' } : l));
+                try {
+                    await saveOneUrl(links[i].url);
+                    setLinks(prev => prev.map((l, idx) => idx === i ? { ...l, status: 'done' } : l));
+                } catch(e) {
+                    setLinks(prev => prev.map((l, idx) => idx === i ? { ...l, status: 'error', msg: e.message } : l));
+                }
+            }
+            setImporting(false);
+            setDone(true);
+        };
+
+        const removeLink = (i) => setLinks(prev => prev.filter((_, idx) => idx !== i));
+
+        const statusIcon = (status) => {
+            if (status === 'pending') return <span style={{fontSize:14,color:'var(--text-muted)'}}>○</span>;
+            if (status === 'saving') return <Loader style={{width:14,height:14,color:'var(--accent)'}} className="animate-spin"/>;
+            if (status === 'done') return <span style={{fontSize:14,color:'#22c55e'}}>✓</span>;
+            if (status === 'error') return <span style={{fontSize:14,color:'#ef4444'}}>✗</span>;
+        };
+
+        const doneCount = links.filter(l => l.status === 'done').length;
+        const errCount = links.filter(l => l.status === 'error').length;
+
+        return (
+            <div className="fixed inset-0 z-[500] bg-[var(--overlay)] backdrop-blur-md flex items-end sm:items-center justify-center sm:p-4" onClick={e => e.target===e.currentTarget && onClose()}>
+                <div className="w-full max-w-md glass-heavy rounded-t-[32px] sm:rounded-[32px] p-6 slide-up border border-[var(--border-color)] shadow-2xl" style={{maxHeight:'85vh',display:'flex',flexDirection:'column'}}>
+                    
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-5" style={{flexShrink:0}}>
+                        <div>
+                            <h2 className="syne text-xl font-bold uppercase tracking-widest text-[var(--text-main)]">Bulk Import</h2>
+                            <p style={{fontSize:11,color:'var(--text-muted)',fontWeight:700,letterSpacing:1,marginTop:2}}>PASTE CLIPBOARD → AUTO SPLIT</p>
+                        </div>
+                        <button onClick={onClose} className="w-10 h-10 bg-[var(--bg-input)] rounded-full flex items-center justify-center spring-anim active-bounce"><X className="w-5 h-5"/></button>
+                    </div>
+
+                    {/* Paste button */}
+                    {!importing && (
+                        <button onClick={handlePaste} className="active-bounce touch-ripple mb-4" style={{flexShrink:0,width:'100%',padding:'14px',borderRadius:16,background:'rgba(var(--accent-rgb),0.1)',border:'1.5px dashed rgba(var(--accent-rgb),0.5)',color:'var(--accent)',fontSize:13,fontWeight:800,letterSpacing:1.5,textTransform:'uppercase',cursor:'pointer',display:'flex',alignItems:'center',justifyContent:'center',gap:8}}>
+                            <Plus style={{width:18,height:18}}/> Paste from Clipboard
+                        </button>
+                    )}
+
+                    {/* Link list */}
+                    {links.length > 0 && (
+                        <div style={{flex:1,overflowY:'auto',marginBottom:12,display:'flex',flexDirection:'column',gap:8}}>
+                            {links.map((l, i) => (
+                                <div key={i} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:14,background:'var(--bg-input)',border:`1px solid ${l.status==='done'?'rgba(34,197,94,0.3)':l.status==='error'?'rgba(239,68,68,0.3)':'var(--border-color)'}`,transition:'border-color 0.3s'}}>
+                                    <div style={{flexShrink:0,width:20,display:'flex',justifyContent:'center'}}>{statusIcon(l.status)}</div>
+                                    <span style={{flex:1,fontSize:11,fontWeight:700,color:'var(--text-main)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{l.url}</span>
+                                    {!importing && l.status === 'pending' && (
+                                        <button onClick={()=>removeLink(i)} style={{background:'none',border:'none',color:'var(--text-muted)',cursor:'pointer',padding:0,flexShrink:0}} className="active-bounce"><X style={{width:14,height:14}}/></button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Empty state */}
+                    {links.length === 0 && (
+                        <div style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',color:'var(--text-muted)',gap:8,paddingBottom:16}}>
+                            <LinkIcon style={{width:32,height:32,opacity:0.3}}/>
+                            <p style={{fontSize:12,fontWeight:700,letterSpacing:1,opacity:0.5}}>NO LINKS YET</p>
+                        </div>
+                    )}
+
+                    {/* Summary after done */}
+                    {done && (
+                        <div style={{flexShrink:0,padding:'10px 14px',borderRadius:14,background:'rgba(34,197,94,0.08)',border:'1px solid rgba(34,197,94,0.25)',marginBottom:12,fontSize:12,fontWeight:700,color:'var(--text-main)',display:'flex',gap:16,justifyContent:'center'}}>
+                            <span style={{color:'#22c55e'}}>✓ {doneCount} saved</span>
+                            {errCount > 0 && <span style={{color:'#ef4444'}}>✗ {errCount} failed</span>}
+                        </div>
+                    )}
+
+                    {/* Action buttons */}
+                    <div style={{flexShrink:0,display:'flex',gap:10}}>
+                        {!done && links.length > 0 && !importing && (
+                            <button onClick={handleImport} className="btn-action btn-primary active-bounce touch-ripple" style={{flex:1,fontSize:12}}>
+                                Import {links.length} Link{links.length!==1?'s':''}
+                            </button>
+                        )}
+                        {importing && (
+                            <div className="btn-action btn-secondary" style={{flex:1,fontSize:12,justifyContent:'center',gap:8}}>
+                                <Loader className="w-4 h-4 animate-spin"/> Importing...
+                            </div>
+                        )}
+                        {done && (
+                            <button onClick={onClose} className="btn-action btn-primary active-bounce touch-ripple" style={{flex:1,fontSize:12}}>
+                                Done
+                            </button>
+                        )}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    /* ═══ MAIN APPLICATION CONTROLLER ═══ */
+    function App() {
+        const [user, setUser] = useState(null);
+        const [items, setItems] = useState([]);
+        const [itemsLoading, setItemsLoading] = useState(true);
+        const [search, setSearch] = useState('');
+        const [activeTag, setActiveTag] = useState('');
+        const [typeFilter, setTypeFilter] = useState('all'); 
+        
+        const [currentTab, setCurrentTab] = useState('home'); // home, search, watch, settings
+        const [layoutMode, setLayoutMode] = useState(() => localStorage.getItem('nxs_layout') || 'grid'); 
+        const [selectedItem, setSelectedItem] = useState(null);
+        const [showAdd, setShowAdd] = useState(false);
+        
+        const [theme, setTheme] = useState(() => localStorage.getItem('nxs_theme') || 'dark');
+        const [appColor, setAppColor] = useState(() => localStorage.getItem('nxs_color') || 'pintrest');
+        const [aiConfig, setAiConfig] = useState(() => ({ provider: localStorage.getItem('nxs_ai_provider') || 'native', key: localStorage.getItem('nxs_ai_key') || '', model: localStorage.getItem('nxs_ai_model') || '' }));
+
+        useEffect(() => { localStorage.setItem('nxs_layout', layoutMode); }, [layoutMode]);
+        useEffect(() => { 
+            if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light'); 
+            else document.documentElement.removeAttribute('data-theme'); 
+            localStorage.setItem('nxs_theme', theme); 
+        }, [theme]);
+        useEffect(() => { 
+            const rgb = THEMES[appColor] || THEMES.pintrest; 
+            document.documentElement.style.setProperty('--accent-rgb', rgb); 
+            document.documentElement.style.setProperty('--accent', `rgb(${rgb})`); 
+            localStorage.setItem('nxs_color', appColor); 
+        }, [appColor]);
+
+        useEffect(() => { const unsub = onAuthStateChanged(auth, u => setUser(u)); return unsub; }, []);
+        useEffect(() => {
+            if (!user) return;
+            const unsub = onSnapshot(query(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'vault_items')), snap => {
+                const data = snap.docs.map(d => ({ id: d.id, ...d.data() })).sort((a,b) => (b.pinned ? 1 : 0) > (a.pinned ? 1 : 0) ? 1 : -1 || (b.savedAt||0) - (a.savedAt||0));
+                setItems(data);
+                setItemsLoading(false);
+            });
+            return unsub;
+        }, [user]);
+
+        // BACKGROUND AUTO-HEAL: Automatically fix broken link thumbnails
+        useEffect(() => {
+            if (!user || items.length === 0) return;
+            const healLinks = async () => {
+                const brokenItems = items.filter(i => i.type === 'link' && !i.thumb && i.url && !i.healed
+                    && !i.url.includes('instagram.com') && !i.url.includes('pinterest.com'));
+                if (brokenItems.length === 0) return;
+                for (const item of brokenItems.slice(0, 3)) {
+                    try {
+                        let newThumb = await fetchMetaImage(item.url);
+                        await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'vault_items', item.id), { thumb: newThumb || null, healed: true });
+                    } catch (e) {
+                        await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'vault_items', item.id), { healed: true });
+                    }
+                }
+            };
+            const timer = setTimeout(healLinks, 10000);
+            return () => clearTimeout(timer);
+        }, [user, items]);
+
+        const triggerAIAutoTag = async (docId, contentToAnalyze, type) => {
+            if(!aiConfig.provider || (aiConfig.provider !== 'native' && !aiConfig.key)) return;
+            try {
+                const prompt = `Analyze this context (URL or Text Content): ${contentToAnalyze}. Type: ${type}. Return ONLY a JSON object with these exact keys: "title" (short descriptive title, do not use raw URLs), "description" (1-2 sentences), "artist" (name or "Unknown"), "character" (name or "Original"), "source" (series/site or "Original"), "tags" (array of 3-5 relevant lowercase tags).`;
+                const res = await handleAIQuery(aiConfig, prompt, true);
+                let jsonStr = res;
+                if(res.includes('```json')) jsonStr = res.split('```json')[1].split('```')[0];
+                const data = JSON.parse(jsonStr.trim());
+                await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'vault_items', docId), {
+                    title: data.title && data.title.length < 50 ? data.title : 'Processed Media',
+                    description: data.description || '', artist: data.artist || 'Unknown',
+                    character: data.character || 'Original', source: data.source || getDomain(contentToAnalyze), tags: data.tags || [type]
+                });
+            } catch(e) { console.log("AI Auto-tag silent fail"); }
+        };
+
+        const handleSave = async (data) => {
+            const docRef = await addDoc(collection(db, 'artifacts', APP_ID, 'users', user.uid, 'vault_items'), { ...data, savedAt: Date.now(), pinned: false, liked: false, comments: [] });
+            const aiTarget = data.url || data.content;
+            if(aiTarget) triggerAIAutoTag(docRef.id, aiTarget, data.type);
+        };
+        const handleUpdate = async (id, data) => {
+            if (id === 'view') return setSelectedItem(data);
+            await updateDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'vault_items', id), data);
+            if (selectedItem?.id === id) setSelectedItem(prev => ({...prev, ...data}));
+        };
+        const handleDelete = async (id) => {
+            if (!confirm('Purge asset?')) return;
+            await deleteDoc(doc(db, 'artifacts', APP_ID, 'users', user.uid, 'vault_items', id));
+            setSelectedItem(null);
+        };
+        const handleAI = async (item) => { triggerAIAutoTag(item.id, item.url || item.content, item.type); alert("AI extraction triggered. Metadata will update shortly."); };
+
+        const filteredItems = useMemo(() => {
+            return items.filter(i => {
+                const term = search.toLowerCase();
+                const matchSearch = !term || [i.title, i.artist, i.character, i.source, ...(i.tags||[])].some(v => (v||'').toLowerCase().includes(term));
+                const matchTag = !activeTag || (i.tags && i.tags.includes(activeTag)) || i.artist === activeTag || i.character === activeTag || i.source === activeTag;
+                const matchType = typeFilter === 'all' || i.type === typeFilter || (typeFilter === 'video' && ['hls','youtube'].includes(i.type));
+                return matchSearch && matchTag && matchType;
+            });
+        }, [items, search, activeTag, typeFilter]);
+
+        if (!user) return <AuthScreen />;
+
+        const isList = layoutMode === 'list'; const isBento = layoutMode === 'bento'; const isFeed = layoutMode === 'feed'; const isPinterestGrid = layoutMode === 'grid';
+        const filters = ['All', 'Video', 'Image', 'Link', 'Note'];
+
+        const allTags = Array.from(new Set(items.flatMap(i => i.tags || []))).slice(0, 30);
+
+        return (
+            <div className="min-h-screen relative">
+                
+                {/* === HOME TAB === */}
+                {currentTab === 'home' && (
+                    <main className="max-w-4xl mx-auto p-4 pt-6 pb-32">
+                        {/* Filter Tags */}
+                        <div className="flex gap-2 overflow-x-auto hide-scroll pb-3 mb-3">
+                            {filters.map(f => (
+                                <button key={f} onClick={()=>setTypeFilter(f.toLowerCase())} className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap spring-anim transition-all active-bounce touch-ripple ${typeFilter === f.toLowerCase() ? 'bg-[var(--text-main)] text-[var(--bg-base)] shadow-md' : 'bg-[var(--bg-input)] text-[var(--text-main)] hover:bg-[var(--border-color)]'}`}>
+                                    {f}
+                                </button>
+                            ))}
+                        </div>
+                        {activeTag && (
+                            <div className="flex items-center mb-5">
+                                <span onClick={() => setActiveTag('')} className="tag-chip !bg-[var(--text-main)] !text-[var(--bg-base)] flex items-center gap-1 shadow-md px-4 py-2 text-xs rounded-full active-bounce touch-ripple">
+                                    <Tag className="w-3 h-3"/> {activeTag} <X className="w-3 h-3 ml-1"/>
+                                </span>
+                            </div>
+                        )}
+                        
+                        {itemsLoading ? (
+                            <div className="columns-2 gap-3" style={{columnFill:'balance'}}>
+                                {[...Array(8)].map((_,i) => (
+                                    <div key={i} className="break-inside-avoid mb-3 rounded-[24px] overflow-hidden skeleton-pulse" style={{height: [160,220,180,260,150,200,240,170][i]+'px', animationDelay: (i*0.08)+'s'}}/>
+                                ))}
+                            </div>
+                        ) : isPinterestGrid ? (
+                            <PinterestMasonry items={filteredItems} onSelect={setSelectedItem} onUpdate={handleUpdate} />
+                        ) : (
+                            <div className={`grid gap-3 md:gap-4 ${isBento ? 'grid-flow-dense' : ''} ${
+                                layoutMode === 'compact' ? 'grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2' : 
+                                layoutMode === 'bento' ? 'grid-cols-2 md:grid-cols-3' :
+                                layoutMode === 'feed' ? 'grid-cols-1 max-w-xl mx-auto' : 'grid-cols-1'
+                            }`}>
+                                {filteredItems.map((item, index) => {
+                                    const bentoWide = isBento && (index % 3 === 2);
+                                    const thumb = getThumbnail(item);
+                                    return (
+                                        <div key={item.id} onClick={() => setSelectedItem(item)} style={{animationDelay: (index*0.04)+'s'}} className={`stagger-item glass-card overflow-hidden cursor-pointer group relative border border-transparent hover:border-accent/50 spring-anim ${
+                                            isList ? 'flex h-28 rounded-[24px] hover-bounce active-bounce' : 
+                                            layoutMode === 'compact' ? 'aspect-square rounded-[20px] hover-bounce active-bounce' : 
+                                            isBento ? (bentoWide ? 'col-span-2 aspect-video rounded-[32px] hover-bounce active-bounce' : 'col-span-1 aspect-square rounded-[32px] hover-bounce active-bounce') :
+                                            isFeed ? 'flex flex-col rounded-[32px] mb-4 bg-[var(--bg-modal)] shadow-lg active-bounce' : ''
+                                        }`}>
+                                            <div className={`relative bg-black/40 ${isList ? 'w-28 h-full shrink-0' : isFeed ? 'w-full aspect-[4/5] sm:aspect-[3/4]' : 'w-full h-full'}`}>
+                                                {thumb ? (
+                                                    <img src={thumb} className={`w-full h-full ${isFeed ? 'object-cover' : 'object-cover'}`} loading="lazy" onError={(e)=>{e.target.style.display='none'; e.target.nextSibling.style.display='flex'}}/>
+                                                ) : item.type === 'embed' ? (
+                                                    <div className="w-full h-full relative bg-black overflow-hidden">
+                                                        <iframe 
+                                                            srcDoc={`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>body{margin:0;padding:12px;color:#f0f0f0;font-family:'Space Mono',monospace;display:flex;flex-direction:column;justify-content:center;align-items:center;min-height:90vh;background:#000;text-align:center;overflow:hidden;}h1,h2,h3{font-family:'Syne',sans-serif;margin:0 0 8px 0;font-size:2rem;color:white;}p{margin:0;color:#888899;font-weight:bold;text-transform:uppercase;letter-spacing:1px;font-size:12px;}</style></head><body><div id="weather"></div><div id="app"></div><div id="root"></div>${item.content}</body></html>`}
+                                                            className="w-full h-full border-none pointer-events-none" sandbox="allow-scripts allow-same-origin" scrolling="no"
+                                                        />
+                                                    </div>
+                                                ) : null}
+                                                
+                                                {/* Fallback View (Hidden unless no thumb or thumb fails) */}
+                                                <div className="w-full h-full flex-col items-center justify-center p-2 opacity-60" style={{ display: thumb ? 'none' : 'flex' }}>
+                                                    {item.type === 'note' ? <FileText className="w-8 h-8 text-accent"/> : <LinkIcon className="w-8 h-8 text-[var(--text-muted)]"/>}
+                                                    {(isBento && !bentoWide) || isFeed && <span className="text-[10px] font-bold mt-2 uppercase tracking-widest text-[var(--text-muted)] truncate max-w-full px-2">{getDomain(item.site || item.url)}</span>}
+                                                </div>
+
+                                                <div className="absolute top-3 right-3 flex gap-1 z-10">
+                                                    {item.pinned && <div className="w-8 h-8 rounded-full bg-accent/90 backdrop-blur flex items-center justify-center shadow-lg"><Bookmark className="w-4 h-4 text-white fill-white"/></div>}
+                                                    {['video','hls','youtube','drive'].includes(item.type) && <div className="w-8 h-8 rounded-full bg-black/80 backdrop-blur flex items-center justify-center shadow-lg"><Play className="w-4 h-4 text-white fill-white ml-0.5"/></div>}
+                                                    {item.type === 'note' && <div className="w-8 h-8 rounded-full bg-[var(--text-main)] backdrop-blur flex items-center justify-center shadow-lg"><FileText className="w-4 h-4 text-[var(--bg-base)]"/></div>}
+                                                </div>
+                                                {item.duration && (
+                                                    <div className="absolute bottom-3 right-3 z-10">
+                                                        <span className="bg-black/80 backdrop-blur-md px-2 py-1 rounded-md text-[10px] text-white font-bold tracking-widest shadow-lg">{formatDuration(item.duration)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+
+                                            {isList ? (
+                                                <div className="p-4 flex flex-col justify-center flex-1 min-w-0">
+                                                    <h4 className="text-sm font-bold truncate text-[var(--text-main)] mb-1">{item.title || 'Untitled Node'}</h4>
+                                                    {item.type !== 'note' && item.type !== 'embed' && <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest truncate">{getDomain(item.site || item.url)}</p>}
+                                                </div>
+                                            ) : isFeed ? (
+                                                <div className="p-6 flex flex-col gap-4">
+                                                    <div className="flex items-center gap-4 border-b border-[var(--border-color)] pb-4">
+                                                        <Heart className={`w-6 h-6 ${item.liked ? 'fill-accent text-accent' : 'text-[var(--text-muted)]'}`} />
+                                                        <Bookmark className={`w-6 h-6 ${item.pinned ? 'fill-accent text-accent' : 'text-[var(--text-muted)]'}`} />
+                                                        <MessageSquare className="w-6 h-6 text-[var(--text-muted)]" />
+                                                        <div className="flex-1"></div>
+                                                        {item.type !== 'note' && item.type !== 'embed' && <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest font-bold">{getDomain(item.site || item.url)}</span>}
+                                                    </div>
+                                                    <div>
+                                                        <h4 className="text-xl font-bold text-[var(--text-main)] leading-tight">{item.title || 'Untitled Node'}</h4>
+                                                        <span className="text-[10px] text-[var(--text-muted)] uppercase tracking-widest block mt-2">{new Date(item.savedAt||0).toLocaleString()}</span>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="absolute inset-x-0 bottom-0 p-4 pt-16 bg-gradient-to-t from-black/95 via-black/60 to-transparent flex flex-col justify-end pointer-events-none">
+                                                    <h4 className="text-xs md:text-sm font-bold text-white truncate drop-shadow-md">{item.title || 'Untitled Node'}</h4>
+                                                    {isBento && bentoWide && item.type !== 'note' && item.type !== 'embed' && <p className="text-[10px] text-white/70 uppercase tracking-widest mt-1 font-bold">{item.type} // {getDomain(item.site || item.url)}</p>}
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                        {!itemsLoading && filteredItems.length === 0 && <div className="text-center mt-32 opacity-40 font-bold uppercase tracking-widest text-sm">Nothing Found</div>}
+                    </main>
+                )}
+
+                {/* === SEARCH TAB === */}
+                {currentTab === 'search' && (
+                    <div className="max-w-4xl mx-auto p-4 pt-8 animate-in pb-32">
+                        <div className="bg-[var(--bg-input)] rounded-full flex items-center px-6 h-16 border border-[var(--border-color)] focus-within:border-[var(--text-main)] transition-colors mb-8 shadow-sm">
+                            <Search className="w-6 h-6 text-[var(--text-main)] mr-3" />
+                            <input autoFocus className="w-full bg-transparent outline-none font-bold text-lg text-[var(--text-main)]" placeholder="Search ideas, pins, tags..." value={search} onChange={e=>setSearch(e.target.value)} />
+                            {search && <button onClick={()=>setSearch('')} className="active-bounce"><X className="w-6 h-6 text-[var(--text-muted)]"/></button>}
+                        </div>
+
+                        {!search ? (
+                            <div>
+                                <h3 className="text-sm font-bold mb-4 px-2 text-[var(--text-main)]">Ideas for you</h3>
+                                <div className="flex flex-wrap gap-2">
+                                    {allTags.map(t => (
+                                        <span key={t} onClick={() => { setActiveTag(t); setCurrentTab('home'); }} className="px-5 py-3 rounded-[24px] bg-[var(--bg-input)] text-[var(--text-main)] font-bold text-sm cursor-pointer hover:bg-[var(--border-color)] spring-anim active-bounce touch-ripple">
+                                            {t}
+                                        </span>
+                                    ))}
+                                    {allTags.length === 0 && <p className="text-xs text-[var(--text-muted)] p-2">Start adding tags to your items to see them here.</p>}
+                                </div>
+                            </div>
+                        ) : (
+                            <PinterestMasonry items={filteredItems} onSelect={setSelectedItem} onUpdate={handleUpdate} />
+                        )}
+                    </div>
+                )}
+
+                {/* === WATCH TAB (Reels / Videos) === */}
+                {currentTab === 'watch' && (
+                    <WatchSection items={items} onUpdate={handleUpdate} onSelectVideo={setSelectedItem} onBack={() => setCurrentTab('home')} />
+                )}
+
+                {/* === SETTINGS TAB === */}
+                {currentTab === 'settings' && (
+                    <div className="max-w-4xl mx-auto p-6 pt-10 animate-in space-y-10 pb-32">
+                        <h1 className="text-3xl font-black text-[var(--text-main)] syne">Settings</h1>
+                        
+                        <div className="space-y-4">
+                            <h3 className="text-xs uppercase tracking-widest font-bold text-[var(--text-muted)]">Appearance</h3>
+                            <div className="flex gap-3">
+                                <button onClick={()=>setTheme('light')} className={`flex-1 p-5 rounded-[24px] border active-bounce touch-ripple ${theme==='light' ? 'border-[var(--text-main)] bg-[var(--bg-input)] shadow-md' : 'border-[var(--border-color)]'} flex flex-col items-center gap-2 spring-anim`}>
+                                    <Sun className="w-6 h-6"/> <span className="text-xs font-bold">Light</span>
+                                </button>
+                                <button onClick={()=>setTheme('dark')} className={`flex-1 p-5 rounded-[24px] border active-bounce touch-ripple ${theme==='dark' ? 'border-[var(--text-main)] bg-[var(--bg-input)] shadow-md' : 'border-[var(--border-color)]'} flex flex-col items-center gap-2 spring-anim`}>
+                                    <Moon className="w-6 h-6"/> <span className="text-xs font-bold">Dark</span>
+                                </button>
+                            </div>
+
+                            <div className="p-5 rounded-[24px] bg-[var(--bg-input)] border border-[var(--border-color)] shadow-inner">
+                                <div className="flex gap-4 overflow-x-auto hide-scroll py-2">
+                                    {Object.entries(THEMES).map(([name, rgb]) => (
+                                        <button key={name} onClick={() => setAppColor(name)}
+                                            className={`w-12 h-12 rounded-full shrink-0 spring-anim active-bounce touch-ripple ${appColor === name ? 'scale-110 border-4 border-[var(--bg-base)] shadow-[0_0_0_2px_var(--text-main)]' : 'scale-100'}`}
+                                            style={{ background: `rgb(${rgb})` }} 
+                                        />
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-xs uppercase tracking-widest font-bold text-[var(--text-muted)]">Default View</h3>
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                {[{id:'grid', icon:LayoutGrid, label:'Grid'}, {id:'compact', icon:Grid3X3, label:'Compact'}, {id:'list', icon:List, label:'List'}, {id:'bento', icon:Layout, label:'Bento'}].map(l => (
+                                    <button key={l.id} onClick={()=>setLayoutMode(l.id)} className={`p-4 rounded-[24px] border active-bounce touch-ripple ${layoutMode===l.id ? 'border-[var(--text-main)] bg-[var(--bg-input)] text-[var(--text-main)] shadow-md' : 'border-[var(--border-color)] text-[var(--text-muted)]'} flex flex-col items-center gap-2 spring-anim`}>
+                                        <l.icon className="w-6 h-6"/> <span className="text-xs font-bold">{l.label}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-xs uppercase tracking-widest font-bold text-[var(--text-muted)]">Upload Config</h3>
+                            <div className="p-5 rounded-[24px] bg-[var(--bg-input)] border border-[var(--border-color)] space-y-3">
+                                <p style={{fontSize:11,fontWeight:700,color:'var(--text-muted)',letterSpacing:1}}>CLOUDINARY UPLOAD PRESET</p>
+                                <input
+                                    className="w-full p-4 rounded-[16px] bg-[var(--bg-base)] border border-[var(--border-color)] text-sm font-bold"
+                                    placeholder="Create unsigned preset in Cloudinary dashboard..."
+                                    defaultValue={localStorage.getItem('nxs_cl_preset')||''}
+                                    onBlur={e=>{ localStorage.setItem('nxs_cl_preset', e.target.value.trim()); }}
+                                />
+                                <p style={{fontSize:10,color:'var(--text-muted)',fontWeight:700}}>Cloud: dw3xg7be9 · ImgBB: active · Go to Cloudinary → Settings → Upload → Add unsigned preset</p>
+                            </div>
+                        </div>
+
+                        <div className="space-y-4">
+                            <h3 className="text-xs uppercase tracking-widest font-bold text-[var(--text-muted)]">Data Control</h3>
+                            <button onClick={()=>{
+                                const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(items, null, 2));
+                                const a = document.createElement('a'); a.href = dataStr; a.download = "nexus_backup.json"; a.click();
+                            }} className="w-full p-5 rounded-[24px] bg-[var(--bg-input)] border border-[var(--border-color)] text-[var(--text-main)] font-bold flex justify-center items-center gap-2 spring-anim active-bounce touch-ripple">
+                                <Download className="w-5 h-5"/> Export Vault Data
+                            </button>
+                        </div>
+                    </div>
+                )}
+
+                {/* === BOTTOM NAVIGATION === */}
+                <nav className="bottom-nav">
+                    <div onClick={()=>setCurrentTab('home')} className={`nav-item touch-ripple ${currentTab==='home' ? 'active' : ''}`}>
+                        <HomeIcon className={currentTab==='home' ? 'fill-[var(--text-main)] w-7 h-7' : 'w-7 h-7'} strokeWidth={currentTab==='home'? 0 : 2} />
+                    </div>
+                    <div onClick={()=>{setCurrentTab('search'); setSearch('');}} className={`nav-item touch-ripple ${currentTab==='search' ? 'active' : ''}`}>
+                        <Search className="w-7 h-7" strokeWidth={currentTab==='search'? 3 : 2} />
+                    </div>
+                    <div onClick={() => setShowAdd(true)} className="nav-item">
+                        <div className="nav-fab shadow-xl shadow-black/20 touch-ripple"><Plus className="w-6 h-6" strokeWidth={3} /></div>
+                    </div>
+                    <div onClick={()=>setCurrentTab('watch')} className={`nav-item touch-ripple ${currentTab==='watch' ? 'active' : ''}`}>
+                        <Clapperboard className={currentTab==='watch' ? 'fill-[var(--text-main)] w-7 h-7' : 'w-7 h-7'} strokeWidth={currentTab==='watch'? 0 : 2} />
+                    </div>
+                    <div onClick={()=>setCurrentTab('settings')} className={`nav-item touch-ripple ${currentTab==='settings' ? 'active' : ''}`}>
+                        <User className={currentTab==='settings' ? 'fill-[var(--text-main)] w-7 h-7' : 'w-7 h-7'} strokeWidth={currentTab==='settings'? 0 : 2} />
+                    </div>
+                </nav>
+
+                {/* Modal & Viewer Overlays */}
+                {showAdd && <AddModal onClose={() => setShowAdd(false)} onSave={handleSave} />}
+                <ItemViewer item={selectedItem} allItems={items} onClose={() => setSelectedItem(null)} onUpdate={handleUpdate} onDelete={handleDelete} onAI={handleAI} onTagClick={(t) => { setActiveTag(t); setCurrentTab('home'); }} />
+            </div>
+        );
+    }
+    createRoot(document.getElementById('root')).render(<App />);
+</script>
+<script>
+document.addEventListener('click', function(e) {
+    const item = e.target.closest('.nav-item');
+    if (!item) return;
+    item.classList.remove('nav-tapped');
+    void item.offsetWidth;
+    item.classList.add('nav-tapped');
+    item.addEventListener('animationend', () => item.classList.remove('nav-tapped'), { once: true });
+});
+</script>
+</body>
+</html>
